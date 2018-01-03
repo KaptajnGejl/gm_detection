@@ -19,7 +19,7 @@ using namespace cv;
 int main(int argc, char const *argv[])
 {
 	
-	cout << "Hello World!" << endl;
+	cout << "Hello World2!" << endl;
 
 	return 0;
 }
