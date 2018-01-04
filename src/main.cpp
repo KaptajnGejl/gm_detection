@@ -1,10 +1,8 @@
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
-//#include <fstream>
 #include <string>
 #include <vector>
-//#include <bitset>
 #include <iomanip>
 #include <sys/types.h>
 #include <dirent.h>
@@ -36,7 +34,7 @@ int main(int argc, char const *argv[])
 
 
 	/* Argument Handling */
-
+	clrscr();
 	cout <<  endl << "Checking arguments to main... " << endl << endl;
 
 	if(argc < 2){
@@ -103,12 +101,59 @@ int main(int argc, char const *argv[])
 
 
 	cout << endl << "Press Enter to coninue..." << endl; 
-
-	//unsigned char c = cin.get();
-
-	//cout << "Char is: " << char(c) << endl;
- 
 	while(cin.get()!='\n'){}
 
+
+	/* End of argument handling */ 
+
+
+	/* Main loop */ 
+
+	cout <<  "Searching path for images with extension " << ext << "..." << endl << endl;
+
+	while((drnt = readdir(dir)) && !flag[2]){
+
+		string fname = drnt->d_name;
+
+		if(fname.find(ext,(fname.length()-ext.length())) != string::npos){
+
+			clrscr();
+			cout << "Found image: " << fname << endl;
+
+			Mat img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
+			namedWindow(fname,WINDOW_AUTOSIZE);
+			moveWindow(fname,1280-img.size().width,20);
+			waitKey(100);
+
+			string cmd = "wmctrl -a " + fname + " 2>/dev/null";
+
+			//cout << cmd << endl;
+			system(cmd.c_str());
+			//system("wmctrl -l 2>/dev/null");
+
+			flag[3] = false;
+
+			while(!flag[3]){
+
+				imshow(fname,img);			    	
+				cout << endl << "Press Enter to continue or 'q' to quit..." << endl;  
+				char key = waitKey(0);
+
+				switch(key){
+					case 'q':
+						flag[2] = true;
+						flag[3] = true;
+					break;
+					case 13: //Enter key
+						flag[3] = true;
+					break;
+				}				
+			}
+			destroyWindow(fname);
+		}
+	}
+
+	destroyAllWindows();
+	cout << "Succesfully exited." << endl;
 	return 0;
 }
