@@ -1,14 +1,15 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 
 using namespace cv;
 using namespace std;
 
 
 int const max_BINARY_value = 255;
-
-Mat image,img_thr,img_cor,img_cor_thr,img_cor_norm;
+RNG rng(12345);
+Mat img_color,image,img_thr,img_cor,img_cor_thr,img_cor_norm,img_cor_gray;
 int threshold_type = 0;
 
 
@@ -21,12 +22,8 @@ int main(int argc, char const *argv[])
 
 
 	image = imread("/Users/FrederiksMac/Documents/GitHub/pic/img1498004642_093301.bmp", CV_LOAD_IMAGE_GRAYSCALE);
-
-
-	namedWindow( "Display window", WINDOW_AUTOSIZE );
-    imshow( "Display window", image );     
-
 	
+
 	int t = optimal_threshold(hist(image,false));
 
 	threshold(image, img_thr, t, max_BINARY_value, threshold_type );
@@ -48,7 +45,32 @@ int main(int argc, char const *argv[])
   	vector<vector<Point> > contours;
  	vector<Vec4i> hierarchy;
 
- 	findContours(img_cor_thr, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+ 	img_cor.convertTo(img_cor,CV_8U);
+
+ 	findContours(img_cor, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+
+ 	Mat img_cont = Mat::zeros( image.size(), CV_8UC3 );
+
+ 	vector<Moments> mu(contours.size() );
+ 	 	for( int i = 0; i < contours.size(); i++ )
+   	 		{ mu[i] = moments( contours[i], false ); }
+
+  
+  	vector<Point2f> mc( contours.size() );
+  		for( int i = 0; i < contours.size(); i++ )
+     		{ mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 ); }
+
+
+ 	for( int i = 0; i< contours.size(); i++ ){
+ 		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+        drawContours( img_cont, contours, i, color, 2, 8, hierarchy, 0, Point() );
+        circle( img_cont, mc[i], 4, Scalar(0,0,255), -1, 8, 0 );
+ 	}
+
+
+ 	namedWindow( "Contours", WINDOW_AUTOSIZE );
+  	imshow("Contours", img_cont);
+
 
   	waitKey(0);
 
