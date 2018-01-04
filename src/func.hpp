@@ -8,5 +8,6 @@ using namespace cv;
 
 /* Prototypes */
 
+void clrscr();
 
 #endif
