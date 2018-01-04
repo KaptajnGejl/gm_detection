@@ -137,7 +137,6 @@ int main(int argc, char const *argv[])
 				unsigned char thr = optimal_threshold(hist(img,true));
 
 				cout << "Threshold set to: " << int(thr) << endl;
-				
 				cout << "Thresholding image..." << endl << endl;
 
 				Mat img_thr; 
@@ -149,8 +148,15 @@ int main(int argc, char const *argv[])
 
 				cout << "Detecting corners on thresholded image..." << endl << endl;
 
+				vector<Point> corners;
+				//cornerHarris(img_thr,img_cor,7,5,0.05,BORDER_DEFAULT);
+				goodFeaturesToTrack(img_thr,corners,0,0.1,20,noArray(),3,true,0.04);
+
 				Mat img_cor;
-				cornerHarris(img_thr,img_cor,7,5,0.05,BORDER_DEFAULT);
+				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);
+				for(unsigned int i = 0; i<corners.size();i++){
+					circle(img_cor,corners[i],3,Scalar(0,255,0),-1,0);
+				}
 
 				namedWindow("Corners",WINDOW_AUTOSIZE);
 				moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
@@ -164,6 +170,7 @@ int main(int argc, char const *argv[])
 						flag[2] = true;
 						flag[3] = true;
 					break;
+
 					case 13: //Enter key
 						flag[3] = true;
 					break;
