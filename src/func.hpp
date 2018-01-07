@@ -9,5 +9,7 @@ using namespace cv;
 /* Prototypes */
 
 void clrscr();
+int optimal_threshold(Mat hist);
+Mat hist(Mat img, bool show_image);
 
 #endif

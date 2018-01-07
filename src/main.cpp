@@ -126,17 +126,43 @@ int main(int argc, char const *argv[])
 			waitKey(100);
 
 			string cmd = "wmctrl -a " + fname + " 2>/dev/null";
-
-			//cout << cmd << endl;
-			system(cmd.c_str());
-			//system("wmctrl -l 2>/dev/null");
-
+			if(system(cmd.c_str()));
+			
 			flag[3] = false;
 
 			while(!flag[3]){
 
-				imshow(fname,img);			    	
-				cout << endl << "Press Enter to continue or 'q' to quit..." << endl;  
+				imshow(fname,img);	 
+
+				unsigned char thr = optimal_threshold(hist(img,true));
+
+				cout << "Threshold set to: " << int(thr) << endl;
+				cout << "Thresholding image..." << endl << endl;
+
+				Mat img_thr; 
+				threshold(img,img_thr,thr,255,0);
+
+				namedWindow("Thresholded",WINDOW_AUTOSIZE);
+				moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
+				imshow("Thresholded",img_thr);
+
+				cout << "Detecting corners on thresholded image..." << endl << endl;
+
+				vector<Point> corners;
+				//cornerHarris(img_thr,img_cor,7,5,0.05,BORDER_DEFAULT);
+				goodFeaturesToTrack(img_thr,corners,0,0.1,20,noArray(),3,true,0.04);
+
+				Mat img_cor;
+				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);
+				for(unsigned int i = 0; i<corners.size();i++){
+					circle(img_cor,corners[i],3,Scalar(0,255,0),-1,0);
+				}
+
+				namedWindow("Corners",WINDOW_AUTOSIZE);
+				moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
+				imshow("Corners",img_cor);
+
+				cout << "Press Enter to continue or 'q' to quit..." << endl;  
 				char key = waitKey(0);
 
 				switch(key){
@@ -144,12 +170,13 @@ int main(int argc, char const *argv[])
 						flag[2] = true;
 						flag[3] = true;
 					break;
+
 					case 13: //Enter key
 						flag[3] = true;
 					break;
 				}				
 			}
-			destroyWindow(fname);
+			destroyAllWindows();
 		}
 	}
 
