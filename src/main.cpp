@@ -20,6 +20,7 @@ int main(int argc, char const *argv[])
 {
 	DIR *dir;
 	string path, arg, ext;
+	Mat img, img_blr, img_thr, img_cor; 
 
 	/* Flags */ 
 	bool flag[4] = {false,false,false,false}; 													//Has to be same size as number of possible arguments
@@ -120,7 +121,7 @@ int main(int argc, char const *argv[])
 			clrscr();
 			cout << "Found image: " << fname << endl;
 
-			Mat img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
+			img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
 			namedWindow(fname,WINDOW_AUTOSIZE);
 			moveWindow(fname,1280-img.size().width,20);
 			waitKey(100);
@@ -134,14 +135,16 @@ int main(int argc, char const *argv[])
 
 				imshow(fname,img);	 
 
-				unsigned char thr = optimal_threshold(hist(img,true));
+				cout << "Blurring Image..." << endl << endl;
+
+				GaussianBlur(img,img_blr,Size(7,7),0,0);
+
+				unsigned char thr = optimal_threshold(hist(img_blr,true));
 
 				cout << "Threshold set to: " << int(thr) << endl;
-				
 				cout << "Thresholding image..." << endl << endl;
 
-				Mat img_thr; 
-				threshold(img,img_thr,thr,255,0);
+				threshold(img_blr,img_thr,thr,255,0);
 
 				namedWindow("Thresholded",WINDOW_AUTOSIZE);
 				moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
@@ -149,8 +152,31 @@ int main(int argc, char const *argv[])
 
 				cout << "Detecting corners on thresholded image..." << endl << endl;
 
-				Mat img_cor;
-				cornerHarris(img_thr,img_cor,7,5,0.05,BORDER_DEFAULT);
+				vector<Point> corners_t;
+				//cornerHarris(img_thr,img_cor,7,5,0.05,BORDER_DEFAULT);
+				goodFeaturesToTrack(img_thr,corners_t,0,0.2,10,noArray(),11,true,0.04);
+
+
+				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);
+
+				for(unsigned int i = 0; i<corners_t.size();i++){
+					circle(img_cor,corners_t[i],3,Scalar(0,140,255),-1,0);
+				}
+
+				vector<corner> corners;
+				corner t;
+
+				for(unsigned int i = 0; i<corners_t.size(); i++){
+					t.pos.x = corners_t[i].x;
+					t.pos.y = corners_t[i].y;
+					corners.push_back(t);
+ 				}
+
+ 				corner center = global_center(corners);
+				corner c_center = cross_center(img_cor, corners);
+
+				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
+				circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
 
 				namedWindow("Corners",WINDOW_AUTOSIZE);
 				moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
@@ -164,6 +190,7 @@ int main(int argc, char const *argv[])
 						flag[2] = true;
 						flag[3] = true;
 					break;
+
 					case 13: //Enter key
 						flag[3] = true;
 					break;
