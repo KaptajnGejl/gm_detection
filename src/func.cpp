@@ -103,7 +103,7 @@ int optimal_threshold(const Mat hist){
 		
 	}
 	
-	return T-30;
+	return T;
 }
 
 Mat hist(Mat img, bool show_image) {
@@ -161,7 +161,7 @@ corner global_center(vector<corner> corners){
 	return temp;
 }
 
-corner cross_center(Mat& img_cor, vector<corner> corners){
+corner cross_center(Mat& img_cor, vector<corner> corners, bool print){
 
 	corner center, c_center;
 	vector<corner> result,temp;
@@ -210,19 +210,20 @@ corner cross_center(Mat& img_cor, vector<corner> corners){
 						temp.push_back(corners[j]);
 				}
 
-				if( (avg_err<best_err) && (squareMatch(img_cor,cvtPoint(temp),0.05)) ){
+				if( (avg_err<best_err) && (squareMatch(img_cor,cvtPoint(temp),0.05,print)) ){
 					best_err = avg_err;
 					result.clear();
 					for(unsigned int j = index; j<index+4; j++){
 						result.push_back(corners[j]);
 					}
-
-					/*cout << endl << "Corners(" << corners.size() << "): " << endl;
-					for(i = 0; i<corners.size(); i++){
-						cout << "x: " << corners[i].pos.x << " y: " << corners[i].pos.y << " dist: " << corners[i].dist << endl;
-					}*/
-								
-					//cout << "Best error so far: " << best_err << ", Index:" << index << endl;
+					if(print){
+						cout << endl << "Corners(" << corners.size() << "): " << endl;
+						for(i = 0; i<corners.size(); i++){
+							cout << "x: " << corners[i].pos.x << " y: " << corners[i].pos.y << " dist: " << corners[i].dist << endl;
+						}
+									
+						cout << "Best error so far: " << best_err << ", Index:" << index << endl;
+					}
 				}
 				temp.clear();
 				first = false; 
@@ -252,7 +253,7 @@ corner cross_center(Mat& img_cor, vector<corner> corners){
 		c_center.pos.x /= 4;
 		c_center.pos.y /= 4;
 
-		//cout << "Best error: " << best_err << endl;
+		if(print) cout << "Best error: " << best_err << endl;
 
 		return c_center;
 	}
@@ -263,18 +264,18 @@ corner cross_center(Mat& img_cor, vector<corner> corners){
 			temp.push_back(corners[j]);
 		}
 
-		if(squareMatch(img_cor,cvtPoint(temp),0.05)){
+		if(squareMatch(img_cor,cvtPoint(temp),0.05,print)){
 
 			for(i = 0; i<corners.size();i++){
 				circle(img_cor,Point(corners[i].pos.x,corners[i].pos.y),3,Scalar(0,255,0),-1,0);
 			}
 
-			//cout << "Defaulting to 4 corners closest to cm" << endl;
+			if(print) cout << "Defaulting to 4 corners closest to cm" << endl;
 			temp.clear();
 			return center;
 		}
 		else{
-			//cout << "Failed to find center, using previous center point" << endl;
+			if(print) cout << "Failed to find center, using previous center point" << endl;
 			corner dummy;
 			return dummy;
 		}
@@ -285,7 +286,7 @@ corner cross_center(Mat& img_cor, vector<corner> corners){
 	}
 }
 
-bool squareMatch(Mat& img_cor, vector<Point> points, float limit){
+bool squareMatch(Mat& img_cor, vector<Point> points, float limit, bool print){
 
 	vector<Point> hull,poly;
 	vector<vector<Point>> cnt;
@@ -305,7 +306,7 @@ bool squareMatch(Mat& img_cor, vector<Point> points, float limit){
 	double match = matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
 
 	if(match<limit){
-		//cout << endl << "Match: " << match << endl;
+		if(print) cout << endl << "Match: " << match << endl;
 		drawContours(img_cor,cnt,1,Scalar(255,0,255),1,LINE_8,noArray(),INT_MAX,Point(0,0));
 		return 1;
 	}
