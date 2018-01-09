@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <math.h>
 #include <algorithm>
+#include <ctime>
 
 #include "func.hpp"
 
@@ -20,7 +21,8 @@ int main(int argc, char const *argv[])
 {
 	DIR *dir;
 	string path, arg, ext;
-	Mat img, img_blr, img_thr, img_cor; 
+	Mat img, img_blr, img_thr, img_cor;
+	uint16_t success = 0, total = 0;
 
 	/* Flags */ 
 	bool flag[4] = {false,false,false,false}; 													//Has to be same size as number of possible arguments
@@ -104,6 +106,8 @@ int main(int argc, char const *argv[])
 	cout << endl << "Press Enter to coninue..." << endl; 
 	while(cin.get()!='\n'){}
 
+	clock_t start = time(0);
+
 
 	/* End of argument handling */ 
 
@@ -120,87 +124,102 @@ int main(int argc, char const *argv[])
 
 			clrscr();
 			cout << "Found image: " << fname << endl;
-
+			cout << "No. of images found: " << total << endl;
+			
 			img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
+			/*
 			namedWindow(fname,WINDOW_AUTOSIZE);
 			moveWindow(fname,1280-img.size().width,20);
 			waitKey(100);
 
+
 			string cmd = "wmctrl -a " + fname + " 2>/dev/null";
 			if(system(cmd.c_str()));
+			*/
 			
 			flag[3] = false;
 
 			while(!flag[3]){
+				total ++;
 
-				imshow(fname,img);	 
+				//imshow(fname,img);	 
 
-				cout << "Blurring Image..." << endl << endl;
+				/* Blurring */
 
+				//cout << "Blurring Image..." << endl << endl;
 				GaussianBlur(img,img_blr,Size(7,7),0,0);
 
-				unsigned char thr = optimal_threshold(hist(img_blr,true));
+				/* Thresholding*/
 
-				cout << "Threshold set to: " << int(thr) << endl;
-				cout << "Thresholding image..." << endl << endl;
-
+				unsigned char thr = optimal_threshold(hist(img_blr,false));
+				//cout << "Threshold set to: " << int(thr) << endl;
+				//cout << "Thresholding image..." << endl << endl;
 				threshold(img_blr,img_thr,thr,255,0);
 
+				/*
 				namedWindow("Thresholded",WINDOW_AUTOSIZE);
 				moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
 				imshow("Thresholded",img_thr);
+				*/
+				/* Corner Detection */
 
-				cout << "Detecting corners on thresholded image..." << endl << endl;
+				//cout << "Detecting corners on thresholded image..." << endl << endl;
 
-				vector<Point> corners_t;
-				//cornerHarris(img_thr,img_cor,7,5,0.05,BORDER_DEFAULT);
-				goodFeaturesToTrack(img_thr,corners_t,0,0.2,10,noArray(),11,true,0.04);
+				vector<Point> points;
+				goodFeaturesToTrack(img_thr,points,0,0.2,10,noArray(),11,true,0.04);
 
 
-				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);
-
-				for(unsigned int i = 0; i<corners_t.size();i++){
-					circle(img_cor,corners_t[i],3,Scalar(0,140,255),-1,0);
+				/* Draw found corners */
+				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);		
+				for(unsigned int i = 0; i<points.size();i++){
+					circle(img_cor,points[i],3,Scalar(0,140,255),-1,0);
 				}
 
-				vector<corner> corners;
-				corner t;
 
-				for(unsigned int i = 0; i<corners_t.size(); i++){
-					t.pos.x = corners_t[i].x;
-					t.pos.y = corners_t[i].y;
-					corners.push_back(t);
- 				}
+				/* Find center of cross, and draw it */
+				if(points.size()>0){
+					vector<corner> corners = cvtCorner(points);
 
- 				corner center = global_center(corners);
-				corner c_center = cross_center(img_cor, corners);
+	 				corner center = global_center(corners);
+	 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
 
-				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
-				circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
+					corner c_center = cross_center(img_cor, corners);
 
-				namedWindow("Corners",WINDOW_AUTOSIZE);
-				moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
-				imshow("Corners",img_cor);
+					if(c_center.pos.x!=0 && c_center.pos.y != 0){
+						circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
+						success++;
+					}			
+					/*
+					namedWindow("Corners",WINDOW_AUTOSIZE);
+					moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
+					imshow("Corners",img_cor);
+					
+					cout << "Press Enter to continue or 'q' to quit..." << endl;  
+					char key = waitKey(0);
 
-				cout << "Press Enter to continue or 'q' to quit..." << endl;  
-				char key = waitKey(0);
+					switch(key){
+						case 'q':
+							flag[2] = true;
+							flag[3] = true;
+						break;
 
-				switch(key){
-					case 'q':
-						flag[2] = true;
-						flag[3] = true;
-					break;
-
-					case 13: //Enter key
-						flag[3] = true;
-					break;
-				}				
+						case 13: //Enter key
+							flag[3] = true;
+						break;
+					}
+					*/	
+					
+				}
+				flag[3]=true;		
 			}
-			destroyAllWindows();
+			//destroyAllWindows();
 		}
 	}
 
-	destroyAllWindows();
+	//destroyAllWindows();
+	clock_t end = time(0);
+	cout << "Success Rate: " << (float)(success*100.0f/total) << '%' << endl;
+	cout << "Time Elapsed: " << difftime(end, start) << " s" << endl;
 	cout << "Succesfully exited." << endl;
 	return 0;
 }
