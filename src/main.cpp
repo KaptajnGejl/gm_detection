@@ -181,7 +181,7 @@ int main(int argc, char const *argv[])
 					else if(!flag[4]) thr = optimal_threshold(hist(img_blr,false));
 
 					if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
-					if(flag[4]) cout << "Thresholding image..." << endl << endl;
+					if(flag[4]) cout << "Thresholding image..." << endl << endl
 
 					Mat histogram = hist(img_blr, false);
 
@@ -323,7 +323,7 @@ int main(int argc, char const *argv[])
 			//if(flag[4]) thr = optimal_threshold(hist(img_blr,true));
 			thr = optimal_threshold(hist(img_blr,false));
       
-    		Mat histogram = hist(img_blr, false);
+      Mat histogram = hist(img_blr, false);
 
 			float sum_i = 0, sum_p = 0;
 
