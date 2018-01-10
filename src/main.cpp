@@ -199,7 +199,12 @@ int main(int argc, char const *argv[])
 
 					}
 
-					else threshold(img_blr,img_thr,thr,255,0);
+					else {
+
+						threshold(img_blr,img_thr,thr,255,3);
+						adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
+
+					}
 
 					if(flag[4]){
 						namedWindow("Thresholded",WINDOW_AUTOSIZE);
