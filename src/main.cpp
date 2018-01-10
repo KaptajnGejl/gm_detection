@@ -317,7 +317,28 @@ int main(int argc, char const *argv[])
 
 			//if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
 			//if(flag[4]) cout << "Thresholding image..." << endl << endl;
-			threshold(img_blr,img_thr,thr,255,0);
+			Mat histogram = hist(img_blr, false);
+
+			float sum_i = 0, sum_p = 0;
+
+			for (int i = 0; i < 256; ++i)
+				{
+					sum_i += i*histogram.at<float>(i);
+					sum_p += histogram.at<float>(i);
+				}
+
+			if (sum_i/sum_p > 150 || histogram.at<float>(255) > 1000){
+
+				adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
+
+			}
+
+			else {
+
+				threshold(img_blr,img_thr,thr,255,3);
+				adaptiveThreshold(img_thr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
+
+			}
 
 			
 			namedWindow("Thresholded",WINDOW_AUTOSIZE);
