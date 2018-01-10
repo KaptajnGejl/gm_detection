@@ -20,11 +20,14 @@ struct dirent *drnt;
 int main(int argc, char const *argv[])
 {
 	DIR *dir;
+
 	string path, path_arg, failpath, arg, ext;
 	Mat img, img_blr, img_thr, img_cor;
 	uint16_t success = 0, total = 0;
 	unsigned char thr = 0;
 	clock_t start = time(0), end = time(0);
+
+
 
 
 	/* Flags */ 
@@ -65,15 +68,15 @@ int main(int argc, char const *argv[])
 			cout << "Failure mode: -f" << endl;
 
 
+
 			return -1;
 		}
 		else if(arg == "-p"){
 
+
 			path_arg = argv[i+1];
 			failpath = path_arg + "/failures/";
 			path = path_arg + "/pic/";
-
-
 			flag[0] = true;
 
 			cout << "Path set to: " << path << endl;
@@ -96,7 +99,6 @@ int main(int argc, char const *argv[])
 
 			cout << "Path set to: " << path << endl;
 		}
-
 	}
 
 	if((flag[0] || flag[1]) == false){															//Check for correct arguments
@@ -112,7 +114,6 @@ int main(int argc, char const *argv[])
 		if(dir){
 
 			cout << endl << "Opened working directory." << endl;  
-	
 		}
 		else{
 
@@ -154,7 +155,6 @@ int main(int argc, char const *argv[])
 				moveWindow(fname,1280-img.size().width,20);
 				waitKey(100);
 
-
 				//string cmd = "wmctrl -a " + fname + " 2>/dev/null";
 				//if(system(cmd.c_str()));	
 			}
@@ -194,7 +194,6 @@ int main(int argc, char const *argv[])
 
 
 				/* Draw found corners */
-
 				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);		
 				for(unsigned int i = 0; i<points.size();i++){
 					circle(img_cor,points[i],3,Scalar(0,140,255),-1,0);
@@ -202,13 +201,12 @@ int main(int argc, char const *argv[])
 
 
 				/* Find center of cross, and draw it */
-
 				if(points.size()>0){
 					vector<corner> corners = cvtCorner(points);
 
 	 				corner center = global_center(corners);
 	 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
-
+          
 					corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
 
 					if(c_center.pos.x!=0 && c_center.pos.y != 0){
