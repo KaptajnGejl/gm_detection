@@ -25,8 +25,13 @@ Mat hist(Mat img, bool show_image);
 corner global_center(vector<corner> corners);
 corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool print);
 vector<corner> findSquares(Mat& img_cor, vector<corner> corners, bool print);
+corner find_square2(vector<corner> corners,Mat& img_cor,Mat& img_thr, float limit); 
+corner find_triangle2(vector<corner> corners,Mat& img_cor, Mat& img_thr, float limit); 
 vector<corner> findTriangles(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool print);
 bool squareMatch(Mat& img_cor, vector<Point> points, float limit, bool print);
 bool triangleMatch(Mat& img_cor, vector<Point> points, float limit, bool print);
+
+double squareMatch2(vector<Point> points);
+double triangleMatch2(vector<Point> points);
 
 #endif
