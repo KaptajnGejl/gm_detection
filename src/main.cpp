@@ -20,11 +20,12 @@ struct dirent *drnt;
 int main(int argc, char const *argv[])
 {
 	DIR *dir;
-	string path, arg, ext;
+	string path, path_arg, failpath, arg, ext;
 	Mat img, img_blr, img_thr, img_cor;
 	uint16_t success = 0, total = 0;
 	unsigned char thr = 0;
 	clock_t start = time(0), end = time(0);
+
 
 	/* Flags */ 
 	bool flag[5] = {false,false,false,false,false}; 													//Has to be same size as number of possible arguments
@@ -61,13 +62,17 @@ int main(int argc, char const *argv[])
 			cout << "Current path: -p $PWD" << endl;
 			cout << "Image file extension: -e .extension" << endl;
 			cout << "Manual mode: -m" << endl;
+			cout << "Failure mode: -f" << endl;
+
 
 			return -1;
 		}
 		else if(arg == "-p"){
 
-			path = argv[i+1];
-			path = path + "/pic/";
+			path_arg = argv[i+1];
+			failpath = path_arg + "/failures/";
+			path = path_arg + "/pic/";
+
 
 			flag[0] = true;
 
@@ -86,6 +91,12 @@ int main(int argc, char const *argv[])
 
 			cout << "Manual mode selected." << endl;
 		}
+		else if(arg == "-f"){
+			path = path_arg + "/failures/";
+
+			cout << "Path set to: " << path << endl;
+		}
+
 	}
 
 	if((flag[0] || flag[1]) == false){															//Check for correct arguments
@@ -144,8 +155,8 @@ int main(int argc, char const *argv[])
 				waitKey(100);
 
 
-				string cmd = "wmctrl -a " + fname + " 2>/dev/null";
-				if(system(cmd.c_str()));	
+				//string cmd = "wmctrl -a " + fname + " 2>/dev/null";
+				//if(system(cmd.c_str()));	
 			}
 
 			flag[3] = false;
@@ -183,6 +194,7 @@ int main(int argc, char const *argv[])
 
 
 				/* Draw found corners */
+
 				cvtColor(img,img_cor,COLOR_GRAY2BGR,0);		
 				for(unsigned int i = 0; i<points.size();i++){
 					circle(img_cor,points[i],3,Scalar(0,140,255),-1,0);
@@ -190,18 +202,21 @@ int main(int argc, char const *argv[])
 
 
 				/* Find center of cross, and draw it */
+
 				if(points.size()>0){
 					vector<corner> corners = cvtCorner(points);
 
 	 				corner center = global_center(corners);
 	 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
 
-					corner c_center = cross_center(img_cor, corners, flag[4]);
+					corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
 
 					if(c_center.pos.x!=0 && c_center.pos.y != 0){
 						circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
 						success++;
-					}	
+					}else if(!flag[4]){
+						imwrite(failpath + fname, img);
+					}
 
 					if(flag[4]){		
 						namedWindow("Corners",WINDOW_AUTOSIZE);
