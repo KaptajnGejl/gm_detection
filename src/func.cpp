@@ -161,14 +161,12 @@ corner global_center(vector<corner> corners){
 	return temp;
 }
 
-  corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool print){
+
+corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool print){
 
 	corner center, c_center, test;
-	vector<corner> result_s, result_t, temp, result;
-	char count = 0;
-	bool first=false;
-	unsigned int i = 0,index = 0;
-	float avg_err_t = 0, avg_err_s = 0, best_err_s = 100, best_err_t = 100;
+	vector<corner>  temp, result;
+	unsigned int i = 0;
 
   center = global_center(corners);
 
@@ -238,7 +236,6 @@ corner global_center(vector<corner> corners){
 			{
 				count=0;
 				first = false;
-
 				avg_err_t = 0;
 				avg_err_s = 0;
 			}
@@ -289,22 +286,17 @@ corner global_center(vector<corner> corners){
 				for(unsigned int j = index; j<index+4; j++){
 						temp.push_back(corners[j]);
 				}
-
-
 				if( (avg_err_s/4<best_err_s) && (squareMatch(img_cor,cvtPoint(temp),0.05,print)) ){
 					best_err_s = avg_err_s/4;
 					result_s.clear();
 					for(unsigned int j = index; j<index+4; j++){
 						result_s.push_back(corners[j]);
-
 					}
 					if(print){
 						cout << endl << "Corners(" << corners.size() << "): " << endl;
 						for(i = 0; i<corners.size(); i++){
 							cout << "x: " << corners[i].pos.x << " y: " << corners[i].pos.y << " dist: " << corners[i].dist << endl;
 						}
-									
-
 						cout << "Best square error so far: " << best_err_s << ", Index:" << index << endl;
 					}
 				}
@@ -376,7 +368,6 @@ corner global_center(vector<corner> corners){
 	}
 	 Else use the global center for the last 4 corners */
 	/*
-
 	else
 	{
 		for(unsigned int j = 0; j<corners.size(); j++){
@@ -461,7 +452,6 @@ vector<corner> findSquares(Mat& img_cor, vector<corner> corners, bool print){
 
 		corners.pop_back();	
 		center = global_center(corners);
-
 		for(i = 0; i<corners.size(); i++){
 			corners[i].dist = sqrt(pow(corners[i].pos.x-center.pos.x,2)+pow(corners[i].pos.y-center.pos.y,2));
 		}
@@ -595,7 +585,6 @@ vector<corner> findTriangles(Mat& img_thr, Mat& img_cor, vector<corner> corners,
 			if(print) cout << "Failed to find square." << endl;
 			return result;
 		}
-
 	}
 }
 
@@ -616,19 +605,15 @@ bool squareMatch(Mat& img_cor, vector<Point> points, float limit, bool print){
 
 	cnt.push_back(poly);
 	poly.clear();
-
-
 	double match = matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
 
 	if(match<limit){
 		if(print) cout << "Square match: " << match << endl;
-
 		drawContours(img_cor,cnt,1,Scalar(255,0,255),1,LINE_8,noArray(),INT_MAX,Point(0,0));
 		return 1;
 	}
 	else
 		return 0;
-
 }
 
 bool triangleMatch(Mat& img_cor, vector<Point> points, float limit, bool print){
