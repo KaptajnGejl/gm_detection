@@ -164,11 +164,8 @@ corner global_center(vector<corner> corners){
 corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool print){
 
 	corner center, c_center, test;
-	vector<corner> result_s, result_t, temp, result;
-	char count = 0;
-	bool first=false;
-	unsigned int i = 0,index = 0;
-	float avg_err_t = 0, avg_err_s = 0, best_err_s = 100, best_err_t = 100;
+	vector<corner>  temp, result;
+	unsigned int i = 0;
 
 	center = global_center(corners);
 
