@@ -161,13 +161,14 @@ corner global_center(vector<corner> corners){
 	return temp;
 }
 
+
 corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool print){
 
 	corner center, c_center, test;
 	vector<corner>  temp, result;
 	unsigned int i = 0;
 
-	center = global_center(corners);
+  center = global_center(corners);
 
 
 	/* Calculate distances to global center, and sort */
@@ -176,7 +177,6 @@ corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool pri
 	}
 	sort(corners.begin(),corners.end(),dist_cmp);
 
-	
 	result = findSquares(img_cor, corners, print);
 
 	if(result.size()>0){
@@ -230,6 +230,7 @@ corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool pri
 				count++;
 				avg_err_t += abs(corners[i].dist-corners[index].dist);
 				avg_err_s += abs(corners[i].dist-corners[index].dist);
+
 			}
 			else
 			{
@@ -285,7 +286,6 @@ corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool pri
 				for(unsigned int j = index; j<index+4; j++){
 						temp.push_back(corners[j]);
 				}
-
 				if( (avg_err_s/4<best_err_s) && (squareMatch(img_cor,cvtPoint(temp),0.05,print)) ){
 					best_err_s = avg_err_s/4;
 					result_s.clear();
@@ -297,7 +297,6 @@ corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool pri
 						for(i = 0; i<corners.size(); i++){
 							cout << "x: " << corners[i].pos.x << " y: " << corners[i].pos.y << " dist: " << corners[i].dist << endl;
 						}
-									
 						cout << "Best square error so far: " << best_err_s << ", Index:" << index << endl;
 					}
 				}
@@ -453,7 +452,6 @@ vector<corner> findSquares(Mat& img_cor, vector<corner> corners, bool print){
 
 		corners.pop_back();	
 		center = global_center(corners);
-
 		for(i = 0; i<corners.size(); i++){
 			corners[i].dist = sqrt(pow(corners[i].pos.x-center.pos.x,2)+pow(corners[i].pos.y-center.pos.y,2));
 		}
@@ -607,7 +605,6 @@ bool squareMatch(Mat& img_cor, vector<Point> points, float limit, bool print){
 
 	cnt.push_back(poly);
 	poly.clear();
-
 	double match = matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
 
 	if(match<limit){

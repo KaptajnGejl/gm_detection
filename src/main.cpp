@@ -28,6 +28,9 @@ int main(int argc, char const *argv[])
 	clock_t start = time(0), end = time(0), timer = time(0), timer_old=time(0);
 
 
+
+
+
 	/* Flags */ 
 	bool flag[6] = {false,false,false,false,false,false}; 													//Has to be same size as number of possible arguments
 
@@ -67,16 +70,13 @@ int main(int argc, char const *argv[])
 			cout << "Failure mode: -f" << endl;
 			cout << "Use webcam as source: -w" << endl;
 
-
 			return -1;
 		}
 		else if(arg == "-p"){
-
 			path_arg = argv[i+1];
 			failpath = path_arg + "/failures/";
 			path = path_arg + "/pic/";
-
-
+      
 			flag[0] = true;
 
 			cout << "Path set to: " << path << endl;
@@ -104,7 +104,6 @@ int main(int argc, char const *argv[])
 
 			cout << "Using webcam as image source" << endl;
 		}
-
 	}
 
 	if((flag[0] || flag[1]) == false){															//Check for correct arguments
@@ -120,7 +119,6 @@ int main(int argc, char const *argv[])
 		if(dir){
 
 			cout << endl << "Opened working directory." << endl;  
-	
 		}
 		else{
 
@@ -161,14 +159,12 @@ int main(int argc, char const *argv[])
 					namedWindow(fname,WINDOW_AUTOSIZE);
 					moveWindow(fname,1280-img.size().width,20);
 					waitKey(100);
-
-
 					//string cmd = "wmctrl -a " + fname + " 2>/dev/null";
 					//if(system(cmd.c_str()));	
 				}
 
 				flag[3] = false;
-
+        
 				while(!flag[3]){
 					total ++;
 
