@@ -494,7 +494,7 @@ corner find_square2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float li
 						if (match < best_match && match < limit) {
 
 							corner temp_center = global_center(temp);
-							
+
 							if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) {
 								best_match = match;
 								result = temp;
@@ -523,11 +523,12 @@ corner find_square2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float li
 		c_center.pos.x /= result.size();
 		c_center.pos.y /= result.size();
 	}
+	/*
 	if (c_center.pos.x!=0 && c_center.pos.y!=0){
 		cout << "best square match: " << best_match << endl;
 	}
 	else cout << "failed to find good enough square" << endl;
-	
+	*/
 	return c_center;
 }
 
@@ -579,11 +580,12 @@ corner find_triangle2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float 
 		c_center.pos.x /= result.size();
 		c_center.pos.y /= result.size();
 	}
+	/*
 	if (c_center.pos.x!=0 && c_center.pos.y!=0){
 		cout << "best triangle match: " << best_match << endl;
 	}
 	else cout << "failed to find good enough triangle" << endl;
-	
+	*/
 	return c_center;
 }
 

@@ -327,6 +327,8 @@ int main(int argc, char const *argv[])
 
 			float sum_i = 0, sum_p = 0;
 
+			/*
+
 			if (sum_i/sum_p > 150 || histogram.at<float>(255) > 1000){
 
 				adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
@@ -335,10 +337,13 @@ int main(int argc, char const *argv[])
 
 			else {
 
-				threshold(img_blr,img_thr,thr,255,3);
-				adaptiveThreshold(img_thr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
+				threshold(img_blr,img_thr,thr,255,0);
+				//adaptiveThreshold(img_thr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
 
 			}
+			*/
+
+			threshold(img_blr,img_thr,thr,255,0);
 			
 			namedWindow("Thresholded",WINDOW_AUTOSIZE);
 			moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
@@ -349,7 +354,7 @@ int main(int argc, char const *argv[])
 			//if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
 
 			vector<Point> points;
-			goodFeaturesToTrack(img_thr,points,0,0.25,10,noArray(),13,true,0.04);
+			goodFeaturesToTrack(img_thr,points,20,0.25,10,noArray(),13,true,0.04);
 
 
 			/* Draw found corners */
@@ -368,7 +373,14 @@ int main(int argc, char const *argv[])
  				corner center = global_center(corners);
  				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
 
-				corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
+				//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
+
+				corner c_center = find_square2(corners, img_cor,img_thr, 0.02);
+
+				if(c_center.pos.x==0 && c_center.pos.y == 0) {
+
+					c_center = find_triangle2(corners, img_cor, img_thr, 0.05);
+				}
 
 				if(c_center.pos.x!=0 && c_center.pos.y != 0){
 					circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
