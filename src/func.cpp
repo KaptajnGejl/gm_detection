@@ -214,8 +214,6 @@ corner cross_center(Mat& img_thr, Mat& img_cor, vector<corner> corners, bool pri
 	if(print) cout << "Failed to find cross center..." << endl;
 
 	return c_center;
-	
-
 }
 
 vector<corner> findSquares(Mat& img_cor, vector<corner> corners, bool print){

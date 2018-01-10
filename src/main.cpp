@@ -181,7 +181,7 @@ int main(int argc, char const *argv[])
 					else if(!flag[4]) thr = optimal_threshold(hist(img_blr,false));
 
 					if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
-					if(flag[4]) cout << "Thresholding image..." << endl << endl;
+					if(flag[4]) cout << "Thresholding image..." << endl << endl
 
 					Mat histogram = hist(img_blr, false);
 
@@ -281,7 +281,7 @@ int main(int argc, char const *argv[])
 
 		stream.set(CV_CAP_PROP_FRAME_WIDTH,320);
 		stream.set(CV_CAP_PROP_FRAME_HEIGHT,240);
-
+	
 		while(true){
 
 			timer = time(0);
@@ -314,18 +314,10 @@ int main(int argc, char const *argv[])
 
 			//if(flag[4]) thr = optimal_threshold(hist(img_blr,true));
 			thr = optimal_threshold(hist(img_blr,false));
-
-			//if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
-			//if(flag[4]) cout << "Thresholding image..." << endl << endl;
-			Mat histogram = hist(img_blr, false);
+      
+      Mat histogram = hist(img_blr, false);
 
 			float sum_i = 0, sum_p = 0;
-
-			for (int i = 0; i < 256; ++i)
-				{
-					sum_i += i*histogram.at<float>(i);
-					sum_p += histogram.at<float>(i);
-				}
 
 			if (sum_i/sum_p > 150 || histogram.at<float>(255) > 1000){
 
@@ -339,7 +331,6 @@ int main(int argc, char const *argv[])
 				adaptiveThreshold(img_thr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
 
 			}
-
 			
 			namedWindow("Thresholded",WINDOW_AUTOSIZE);
 			moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
