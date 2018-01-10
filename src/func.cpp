@@ -468,3 +468,162 @@ bool triangleMatch(Mat& img_cor, vector<Point> points, float limit, bool print){
 	else
 		return 0;
 }
+
+corner find_square2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float limit) {
+	double match = 0,best_match = 10;
+	vector<corner> result, temp;
+	corner c_center;
+
+	if (corners.size() >= 4) {
+
+		for (int i = 0; i < corners.size(); i++)
+		{	
+			temp.push_back(corners[i]);
+			for (int j = i+1; j < corners.size(); j++)
+			{
+				temp.push_back(corners[j]);
+				for (int k = j+1; k < corners.size(); k++)
+				{
+					temp.push_back(corners[k]);
+					for (int l = k+1; l < corners.size(); l++)
+					{
+						temp.push_back(corners[l]);
+
+						match = squareMatch2(cvtPoint(temp));
+
+						if (match < best_match && match < limit) {
+
+							corner temp_center = global_center(temp);
+							
+							if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) {
+								best_match = match;
+								result = temp;
+							}
+						}
+
+						temp.pop_back();	
+					}
+
+					temp.pop_back();
+				}	
+
+				temp.pop_back();	
+			}		
+
+			temp.pop_back();
+		}
+	}
+	if(result.size()>0){
+		for(unsigned int j = 0; j<result.size(); j++){
+			c_center.pos.x += result[j].pos.x;
+			c_center.pos.y += result[j].pos.y;
+			circle(img_cor,Point(result[j].pos.x,result[j].pos.y),3,Scalar(0,255,0),-1,0);
+		}
+
+		c_center.pos.x /= result.size();
+		c_center.pos.y /= result.size();
+	}
+	if (c_center.pos.x!=0 && c_center.pos.y!=0){
+		cout << "best square match: " << best_match << endl;
+	}
+	else cout << "failed to find good enough square" << endl;
+	
+	return c_center;
+}
+
+corner find_triangle2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float limit) {
+	double match = 0,best_match = 10;
+	vector<corner> result, temp;
+	corner c_center;
+
+	if (corners.size() >= 3) {
+
+		for (int i = 0; i < corners.size(); i++)
+		{	
+			temp.push_back(corners[i]);
+			for (int j = i+1; j < corners.size(); j++)
+			{
+				temp.push_back(corners[j]);
+				for (int k = j+1; k < corners.size(); k++)
+				{
+				
+					temp.push_back(corners[k]);
+
+					match = triangleMatch2(cvtPoint(temp));
+
+					if (match < best_match && match < limit) {
+						corner temp_center = global_center(temp);
+						if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) {
+							best_match = match;
+							result = temp;
+						}
+					}
+
+
+					temp.pop_back();
+				}	
+
+				temp.pop_back();	
+			}		
+
+			temp.pop_back();
+		}
+	}
+	if(result.size()>0){
+		for(unsigned int j = 0; j<result.size(); j++){
+			c_center.pos.x += result[j].pos.x;
+			c_center.pos.y += result[j].pos.y;
+			circle(img_cor,Point(result[j].pos.x,result[j].pos.y),3,Scalar(0,255,0),-1,0);
+		}
+
+		c_center.pos.x /= result.size();
+		c_center.pos.y /= result.size();
+	}
+	if (c_center.pos.x!=0 && c_center.pos.y!=0){
+		cout << "best triangle match: " << best_match << endl;
+	}
+	else cout << "failed to find good enough triangle" << endl;
+	
+	return c_center;
+}
+
+double squareMatch2(vector<Point> points){
+
+	vector<Point> hull,poly;
+	vector<vector<Point>> cnt;
+
+	poly.push_back(Point(0,0));
+	poly.push_back(Point(0,30));
+	poly.push_back(Point(30,30));
+	poly.push_back(Point(30,0));
+	cnt.push_back(poly);
+	poly.clear();
+
+	convexHull(points,hull,false);
+	approxPolyDP(hull,poly,0.01*arcLength(hull,true),true);
+
+	cnt.push_back(poly);
+	poly.clear();
+	return matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
+}
+
+double triangleMatch2(vector<Point> points){
+
+	vector<Point> hull,poly;
+	vector<vector<Point>> cnt;
+
+	poly.push_back(Point(0,0));
+	poly.push_back(Point(0,30));
+	poly.push_back(Point(30,0));
+	cnt.push_back(poly);
+	poly.clear();
+
+	convexHull(points,hull,false);
+	approxPolyDP(hull,poly,0.01*arcLength(hull,true),true);
+
+	cnt.push_back(poly);
+	poly.clear();
+
+	return matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
+
+}

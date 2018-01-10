@@ -201,8 +201,8 @@ int main(int argc, char const *argv[])
 
 					else {
 
-						threshold(img_blr,img_thr,thr,255,3);
-						adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
+						threshold(img_blr,img_thr,thr,255,0);
+						//adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
 
 					}
 
@@ -235,11 +235,19 @@ int main(int argc, char const *argv[])
 		 				corner center = global_center(corners);
 		 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
 
-						corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
+						//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
+
+						corner c_center = find_square2(corners, img_cor,img_thr, 0.02);
+
+						if(c_center.pos.x==0 && c_center.pos.y == 0) {
+
+							c_center = find_triangle2(corners, img_cor, img_thr, 0.05);
+						}
 
 						if(c_center.pos.x!=0 && c_center.pos.y != 0){
 							circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
 							success++;
+
 						}else if(!flag[4]){
 							imwrite(failpath + fname, img);
 						}
