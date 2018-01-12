@@ -33,5 +33,6 @@ bool triangleMatch(Mat& img_cor, vector<Point> points, float limit, bool print);
 
 double squareMatch2(vector<Point> points);
 double triangleMatch2(vector<Point> points);
-
+bool similar_point_check(Mat& img,vector<corner> p);
+corner triangle_center(vector<corner> corners);
 #endif

@@ -22,9 +22,9 @@ int main(int argc, char const *argv[])
 {
 	DIR *dir;
 	string path, path_arg, failpath, arg, ext;
-	Mat img, img_blr, img_thr, img_cor;
+	Mat img, img_blr,img_lap,img_lap_sc, img_thr, img_cor,img_thr2;
 	uint16_t success = 0, total = 0;
-	unsigned char thr = 0;
+	unsigned char thr = 0, thr2 = 0;
 	clock_t start = time(0), end = time(0), timer = time(0), timer_old=time(0);
 
 
@@ -175,14 +175,23 @@ int main(int argc, char const *argv[])
 					if(flag[4]) cout << "Blurring Image..." << endl << endl;
 					GaussianBlur(img,img_blr,Size(7,7),0,0);
 
-					/* Thresholding*/
+					thr2 = optimal_threshold(hist(img_blr,false));
 
-					if(flag[4]) thr = optimal_threshold(hist(img_blr,true));
-					else if(!flag[4]) thr = optimal_threshold(hist(img_blr,false));
+					cornerHarris( img_blr, img_thr, 5, 5, 0.05, BORDER_DEFAULT );
+					normalize( img_thr, img_thr, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+					//Laplacian(img_blr, img_thr, CV_16S, 3, 1,0, BORDER_DEFAULT );
+					convertScaleAbs( img_thr, img_thr);
+
+					/* Thresholding*/
+			
+
+					if(flag[4]) thr = optimal_threshold(hist(img_thr,true));
+					else if(!flag[4]) thr = optimal_threshold(hist(img_thr,false));
 
 					if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
 					if(flag[4]) cout << "Thresholding image..." << endl << endl;
 
+					/*
 					Mat histogram = hist(img_blr, false);
 
 					float sum_i = 0, sum_p = 0;
@@ -205,6 +214,10 @@ int main(int argc, char const *argv[])
 						//adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
 
 					}
+					*/
+
+					threshold(img_thr,img_thr,thr+40,255,0);
+					threshold(img_blr,img_thr2,thr2,255,0);
 
 					if(flag[4]){
 						namedWindow("Thresholded",WINDOW_AUTOSIZE);
@@ -216,7 +229,7 @@ int main(int argc, char const *argv[])
 					if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
 
 					vector<Point> points;
-					goodFeaturesToTrack(img_thr,points,0,0.2,10,noArray(),11,true,0.04);
+					goodFeaturesToTrack(img_thr,points,0,0.5,5,noArray(),5,false,0.04);
 
 
 					/* Draw found corners */
@@ -236,13 +249,14 @@ int main(int argc, char const *argv[])
 		 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
 
 						//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
-
-						corner c_center = find_square2(corners, img_cor,img_thr, 0.02);
+						
+						corner c_center = find_square2(corners, img_cor,img_thr2, 0.01);
 
 						if(c_center.pos.x==0 && c_center.pos.y == 0) {
 
-							c_center = find_triangle2(corners, img_cor, img_thr, 0.05);
+							c_center = find_triangle2(corners, img_cor, img_thr2, 0.2);
 						}
+						
 
 						if(c_center.pos.x!=0 && c_center.pos.y != 0){
 							circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
@@ -305,29 +319,50 @@ int main(int argc, char const *argv[])
 			//img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
 			cvtColor(img,img,COLOR_BGR2GRAY,0);	
 
-			namedWindow("Stream",WINDOW_AUTOSIZE);
-			moveWindow("Stream",1280-img.size().width,20);
+			namedWindow("Thresholded",WINDOW_AUTOSIZE);
+			moveWindow("Thresholded",1280-img.size().width,20);
 			waitKey(1);
 
 			total ++;
 
-			imshow("Stream",img);	 
+			 
 			
 			/* Blurring */
 
 			//if(flag[4]) cout << "Blurring Image..." << endl << endl;
-			GaussianBlur(img,img_blr,Size(7,7),0,0);
+			GaussianBlur(img,img_blr,Size(5,5),0,0);
+			
+			thr2 = optimal_threshold(hist(img_blr,false));
+			threshold(img_blr,img_thr2,thr2+30,255,3);
+			imshow("Thresholded",img_thr2);	
+			//Canny(img_blr,img_thr, 100, 150, 3,true);
+			
+			cornerHarris( img_thr2, img_thr, 1, 11, 1, BORDER_DEFAULT );
+			normalize( img_thr, img_thr, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+
+			//Laplacian(img_blr, img_thr, CV_16S, 3, 1,0, BORDER_DEFAULT );
+			
+			convertScaleAbs( img_thr, img_thr );
+			
+			thr = optimal_threshold(hist(img_thr,true));
+			
+			threshold(img_thr,img_thr,thr,255,0);
+
+			
 
 			/* Thresholding*/
 
 			//if(flag[4]) thr = optimal_threshold(hist(img_blr,true));
-			thr = optimal_threshold(hist(img_blr,false));
-      
+
+
+			//threshold(img_blr,img_thr,thr,255,0);
+			
+      		/*
     		Mat histogram = hist(img_blr, false);
 
 			float sum_i = 0, sum_p = 0;
 
-			/*
+			
 
 			if (sum_i/sum_p > 150 || histogram.at<float>(255) > 1000){
 
@@ -343,18 +378,17 @@ int main(int argc, char const *argv[])
 			}
 			*/
 
-			threshold(img_blr,img_thr,thr,255,0);
-			
-			namedWindow("Thresholded",WINDOW_AUTOSIZE);
-			moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
-			imshow("Thresholded",img_thr);
+			namedWindow("Before goodFeaturesToTrack",WINDOW_AUTOSIZE);
+			moveWindow("Before goodFeaturesToTrack",1280-img_thr.size().width,53+img.size().height);
+			imshow("Before goodFeaturesToTrack",img_thr);
+
 			
 			/* Corner Detection */
 
 			//if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
 
 			vector<Point> points;
-			goodFeaturesToTrack(img_thr,points,20,0.25,10,noArray(),13,true,0.04);
+			goodFeaturesToTrack(img_thr,points,20,0.4,10,noArray(),11,true,0.04);
 
 
 			/* Draw found corners */
@@ -375,11 +409,11 @@ int main(int argc, char const *argv[])
 
 				//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
 
-				corner c_center = find_square2(corners, img_cor,img_thr, 0.02);
+				corner c_center = find_square2(corners, img_cor,img_thr2, 0.01);
 
 				if(c_center.pos.x==0 && c_center.pos.y == 0) {
 
-					c_center = find_triangle2(corners, img_cor, img_thr, 0.05);
+					c_center = find_triangle2(corners, img_cor, img_thr2, 0.2);
 				}
 
 				if(c_center.pos.x!=0 && c_center.pos.y != 0){
@@ -425,6 +459,8 @@ int main(int argc, char const *argv[])
 	if(!flag[4]) end = time(0);
 	if(!flag[5])cout << "Success Rate: " << (float)(success*100.0f/total) << '%' << endl;
 	if(!flag[4]) cout << "Time Elapsed: " << difftime(end, start) << " s" << endl;
+	if(!flag[4]) cout << "Frequency: " << total/difftime(end, start) << " images/s" << endl;
+
 	cout << "Succesfully exited." << endl;
 	return 0;
 }

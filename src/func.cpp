@@ -495,7 +495,7 @@ corner find_square2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float li
 
 							corner temp_center = global_center(temp);
 
-							if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) {
+							if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0 ) { //&& similar_point_check(img_thr,temp)) {
 								best_match = match;
 								result = temp;
 							}
@@ -523,12 +523,12 @@ corner find_square2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float li
 		c_center.pos.x /= result.size();
 		c_center.pos.y /= result.size();
 	}
-	/*
+	
 	if (c_center.pos.x!=0 && c_center.pos.y!=0){
 		cout << "best square match: " << best_match << endl;
 	}
-	else cout << "failed to find good enough square" << endl;
-	*/
+	//else cout << "failed to find good enough square" << endl;
+	
 	return c_center;
 }
 
@@ -553,8 +553,8 @@ corner find_triangle2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float 
 					match = triangleMatch2(cvtPoint(temp));
 
 					if (match < best_match && match < limit) {
-						corner temp_center = global_center(temp);
-						if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) {
+						corner temp_center = triangle_center(temp);
+						if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) { //&& similar_point_check(img_thr,temp)) {
 							best_match = match;
 							result = temp;
 						}
@@ -572,20 +572,17 @@ corner find_triangle2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float 
 	}
 	if(result.size()>0){
 		for(unsigned int j = 0; j<result.size(); j++){
-			c_center.pos.x += result[j].pos.x;
-			c_center.pos.y += result[j].pos.y;
 			circle(img_cor,Point(result[j].pos.x,result[j].pos.y),3,Scalar(0,255,0),-1,0);
 		}
 
-		c_center.pos.x /= result.size();
-		c_center.pos.y /= result.size();
+		c_center = triangle_center(result);
 	}
-	/*
+	
 	if (c_center.pos.x!=0 && c_center.pos.y!=0){
 		cout << "best triangle match: " << best_match << endl;
 	}
-	else cout << "failed to find good enough triangle" << endl;
-	*/
+	//else cout << "failed to find good enough triangle" << endl;
+	
 	return c_center;
 }
 
@@ -629,3 +626,44 @@ double triangleMatch2(vector<Point> points){
 	return matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
 
 }
+
+bool similar_point_check(Mat& img,vector<corner> p) {
+
+	for (int i = 1; i < p.size(); i++)
+	{
+		if (img.at<uchar>(p[i-1].pos.y,p[i-1].pos.x)!= img.at<uchar>(p[i].pos.y,p[i].pos.x)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+
+corner triangle_center(vector<corner> corners){
+	
+	vector<corner> result_vc;
+	corner temp;
+
+	temp.pos.x = (corners[0].pos.x+corners[1].pos.x)/2;
+	temp.pos.y = (corners[0].pos.y+corners[1].pos.y)/2;
+	temp.dist = (corners[0].pos.x-corners[1].pos.x)*(corners[0].pos.x-corners[1].pos.x)+(corners[0].pos.y-corners[1].pos.y)*(corners[0].pos.y-corners[1].pos.y);
+
+	result_vc.push_back(temp);
+
+	temp.pos.x = (corners[0].pos.x+corners[2].pos.x)/2;
+	temp.pos.y = (corners[0].pos.y+corners[2].pos.y)/2;
+	temp.dist = (corners[0].pos.x-corners[2].pos.x)*(corners[0].pos.x-corners[2].pos.x)+(corners[0].pos.y-corners[2].pos.y)*(corners[0].pos.y-corners[2].pos.y);
+
+	result_vc.push_back(temp);
+
+	temp.pos.x = (corners[1].pos.x+corners[2].pos.x)/2;
+	temp.pos.y = (corners[1].pos.y+corners[2].pos.y)/2;
+	temp.dist = (corners[1].pos.x-corners[2].pos.x)*(corners[1].pos.x-corners[2].pos.x)+(corners[1].pos.y-corners[2].pos.y)*(corners[1].pos.y-corners[2].pos.y);
+
+	result_vc.push_back(temp);
+
+	sort(result_vc.begin(),result_vc.end(),dist_cmp);
+
+	return result_vc.back();
+}
+
