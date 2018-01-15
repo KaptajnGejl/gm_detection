@@ -12,6 +12,7 @@
 #include <ctime>
 
 #include "func.hpp"
+//#include "raspicam/raspicam_cv.h"
 
 using namespace std;
 using namespace cv;
@@ -168,29 +169,36 @@ int main(int argc, char const *argv[])
 				while(!flag[3]){
 					total ++;
 
-					if(flag[4])imshow(fname,img);	 
+					 
 					
 					/* Blurring */
 
 					if(flag[4]) cout << "Blurring Image..." << endl << endl;
-					GaussianBlur(img,img_blr,Size(7,7),0,0);
+					
+					GaussianBlur(img,img_blr,Size(13,13),0,0);
 
-					thr2 = optimal_threshold(hist(img_blr,false));
-
-					cornerHarris( img_blr, img_thr, 5, 5, 0.05, BORDER_DEFAULT );
-					normalize( img_thr, img_thr, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
-					//Laplacian(img_blr, img_thr, CV_16S, 3, 1,0, BORDER_DEFAULT );
-					convertScaleAbs( img_thr, img_thr);
 
 					/* Thresholding*/
-			
+					thr2 = optimal_threshold(hist(img_blr,false));
+					threshold(img_blr,img_thr2,0,255,THRESH_BINARY+THRESH_OTSU);
+					adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY, 21, 5);
+					
 
-					if(flag[4]) thr = optimal_threshold(hist(img_thr,true));
+					if(flag[4])imshow(fname,img_thr);	
+					//Canny(img_thr,img_thr, 50, 200, 3,true);
+					/*
+					cornerHarris( img_thr, img_thr, 7, 5, 0.04, BORDER_DEFAULT );
+					normalize(img_thr, img_thr, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+					convertScaleAbs( img_thr, img_thr );
+					*/
+
+					if(flag[4]) thr = optimal_threshold(hist(img_thr,false));
 					else if(!flag[4]) thr = optimal_threshold(hist(img_thr,false));
 
 					if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
 					if(flag[4]) cout << "Thresholding image..." << endl << endl;
 
+					//threshold(img_thr,img_thr,0,255,THRESH_BINARY+THRESH_OTSU);
 					/*
 					Mat histogram = hist(img_blr, false);
 
@@ -216,8 +224,7 @@ int main(int argc, char const *argv[])
 					}
 					*/
 
-					threshold(img_thr,img_thr,thr+40,255,0);
-					threshold(img_blr,img_thr2,thr2,255,0);
+
 
 					if(flag[4]){
 						namedWindow("Thresholded",WINDOW_AUTOSIZE);
@@ -229,7 +236,7 @@ int main(int argc, char const *argv[])
 					if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
 
 					vector<Point> points;
-					goodFeaturesToTrack(img_thr,points,0,0.5,5,noArray(),5,false,0.04);
+					goodFeaturesToTrack(img,points,20,0.5,10,noArray(),11,false,0.04);
 
 
 					/* Draw found corners */
@@ -245,12 +252,9 @@ int main(int argc, char const *argv[])
 					if(points.size()>0){
 						vector<corner> corners = cvtCorner(points);
 
-		 				corner center = global_center(corners);
-		 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
-
 						//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
 						
-						corner c_center = find_square2(corners, img_cor,img_thr2, 0.01);
+						corner c_center = find_square2(corners, img_cor,img_thr2, 0.05);
 
 						if(c_center.pos.x==0 && c_center.pos.y == 0) {
 
@@ -295,14 +299,18 @@ int main(int argc, char const *argv[])
 	}
 	else{
 		VideoCapture stream(0);
+		//raspicam::RaspiCam_Cv stream;
+
+		//stream.set(CV_CAP_PROP_FORMAT, CV_8UC1);
+		stream.set(CV_CAP_PROP_FRAME_WIDTH,320);
+		stream.set(CV_CAP_PROP_FRAME_HEIGHT,240);
 
 		if (!stream.isOpened()) { //check if video device has been initialised
 			cout << "Cannot open camera";
 			return -1;
 		}
 
-		stream.set(CV_CAP_PROP_FRAME_WIDTH,320);
-		stream.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+		
 	
 		while(true){
 
@@ -315,6 +323,9 @@ int main(int argc, char const *argv[])
 				total = 0;
 			}
 			
+			//stream.grab();
+			//stream.retrieve(img);
+
 			stream.read(img);
 			//img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
 			cvtColor(img,img,COLOR_BGR2GRAY,0);	
@@ -330,24 +341,27 @@ int main(int argc, char const *argv[])
 			/* Blurring */
 
 			//if(flag[4]) cout << "Blurring Image..." << endl << endl;
-			GaussianBlur(img,img_blr,Size(5,5),0,0);
-			
+			GaussianBlur(img,img_blr,Size(7,7),0,0);
+
+
 			thr2 = optimal_threshold(hist(img_blr,false));
-			threshold(img_blr,img_thr2,thr2+30,255,3);
+			threshold(img_blr,img_thr2,thr2+35,255,3);
 			imshow("Thresholded",img_thr2);	
+
+			/* Thresholding*/
 			//Canny(img_blr,img_thr, 100, 150, 3,true);
+			
+
 			
 			cornerHarris( img_thr2, img_thr, 1, 11, 1, BORDER_DEFAULT );
 			normalize( img_thr, img_thr, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
 
-			//Laplacian(img_blr, img_thr, CV_16S, 3, 1,0, BORDER_DEFAULT );
-			
 			convertScaleAbs( img_thr, img_thr );
 			
 			thr = optimal_threshold(hist(img_thr,true));
 			
-			threshold(img_thr,img_thr,thr,255,0);
-
+			threshold(img_thr,img_thr,thr-15,255,0);
+			
 			
 
 			/* Thresholding*/
@@ -388,8 +402,8 @@ int main(int argc, char const *argv[])
 			//if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
 
 			vector<Point> points;
-			goodFeaturesToTrack(img_thr,points,20,0.4,10,noArray(),11,true,0.04);
-
+			goodFeaturesToTrack(img_thr,points,20,0.4,0,noArray(),11,false,0.04);
+			
 
 			/* Draw found corners */
 
@@ -403,9 +417,6 @@ int main(int argc, char const *argv[])
 
 			if(points.size()>0){
 				vector<corner> corners = cvtCorner(points);
-
- 				corner center = global_center(corners);
- 				circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
 
 				//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
 

@@ -476,22 +476,22 @@ corner find_square2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float li
 
 	if (corners.size() >= 4) {
 
-		for (int i = 0; i < corners.size(); i++)
+		for (unsigned int i = 0; i < corners.size(); i++)
 		{	
 			temp.push_back(corners[i]);
-			for (int j = i+1; j < corners.size(); j++)
+			for (unsigned int j = i+1; j < corners.size(); j++)
 			{
 				temp.push_back(corners[j]);
-				for (int k = j+1; k < corners.size(); k++)
+				for (unsigned int k = j+1; k < corners.size(); k++)
 				{
 					temp.push_back(corners[k]);
-					for (int l = k+1; l < corners.size(); l++)
+					for (unsigned int l = k+1; l < corners.size(); l++)
 					{
 						temp.push_back(corners[l]);
 
 						match = squareMatch2(cvtPoint(temp));
 
-						if (match < best_match && match < limit) {
+						if ((match < best_match) && (match < limit) && (match != 0))  {
 
 							corner temp_center = global_center(temp);
 
@@ -539,20 +539,20 @@ corner find_triangle2(vector<corner> corners, Mat& img_cor, Mat& img_thr, float 
 
 	if (corners.size() >= 3) {
 
-		for (int i = 0; i < corners.size(); i++)
+		for (unsigned int i = 0; i < corners.size(); i++)
 		{	
 			temp.push_back(corners[i]);
-			for (int j = i+1; j < corners.size(); j++)
+			for (unsigned int j = i+1; j < corners.size(); j++)
 			{
 				temp.push_back(corners[j]);
-				for (int k = j+1; k < corners.size(); k++)
+				for (unsigned int k = j+1; k < corners.size(); k++)
 				{
 				
 					temp.push_back(corners[k]);
 
 					match = triangleMatch2(cvtPoint(temp));
 
-					if (match < best_match && match < limit) {
+					if ((match < best_match) && (match < limit) && (match != 0)) {
 						corner temp_center = triangle_center(temp);
 						if (img_thr.at<uchar>(temp_center.pos.y,temp_center.pos.x)==0) { //&& similar_point_check(img_thr,temp)) {
 							best_match = match;
@@ -665,5 +665,21 @@ corner triangle_center(vector<corner> corners){
 	sort(result_vc.begin(),result_vc.end(),dist_cmp);
 
 	return result_vc.back();
+}
+
+bool center_check(corner center, Mat& histogram, Mat& img, float limit_factor) {
+
+for (int i = 0; i < 256; ++i)
+	{
+		sum_i += i*hist.at<float>(i);
+		sum_p += hist.at<float>(i);
+	}
+
+	float mean = sum_i/sum_p;
+
+	if (img.at<uchar>(center.pos.y,center.pos.y) < mean*limit_factor) return true;
+
+	else return false;
+
 }
 
