@@ -111,14 +111,15 @@ corner global_center(vector<corner> corners){
 	return temp;
 }
 
-
 corner find_square(vector<corner> corners, Mat& img_cor, Mat& img, float match_limit, float center_limit) {
-
 	// Finds the best square from a given vector of corners
 	// the function loops through every combination of 4 points and determines how well these match a square
 	// the best combination with a match under a given limit is determined to be four corners in a cross
 	// that is, if the center of the found square is black thus is in the cross.
 	// the center of the found square is returned. If no square is found, the center (0,0) is returned
+
+  center = global_center(corners);
+
 
 	double match = 0,best_match = 10;
 	vector<corner> result, temp;
@@ -184,8 +185,6 @@ corner find_triangle(vector<corner> corners, Mat& img_cor, Mat& img, float match
 	// the best combination with a match under a given limit is determined to be three corners from a cross
 	// that is, if the center point between the two corners furthest apart in the found triangle is black, thus is in the cross.
 	// the center of the found triangle is returned. If no triangle is found, the center (0,0) is returned
-
-
 
 	double match = 0,best_match = 10;
 	vector<corner> result, temp;
@@ -255,6 +254,7 @@ double squareMatch(vector<Point> points){
 	cnt.push_back(poly);
 	poly.clear();
 	return matchShapes(cnt[0],cnt[1],CONTOURS_MATCH_I1,0);
+
 }
 
 double triangleMatch(vector<Point> points){
@@ -333,4 +333,5 @@ bool center_check(corner center, Mat histogram, Mat& img, float limit_factor) {
 		else return false;
 
 }
+
 

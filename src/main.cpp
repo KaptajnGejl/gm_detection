@@ -28,6 +28,9 @@ int main(int argc, char const *argv[])
 	vector<Point> points;
 	vector<corner> corners;
 
+
+
+
 	/* Flags */ 
 	bool flag[7] = {false,false,false,false,false,false,false}; 													//Has to be same size as number of possible arguments
 
@@ -68,14 +71,14 @@ int main(int argc, char const *argv[])
 			cout << "Failure mode: -f" << endl;
 			cout << "Use webcam as source: -w" << endl;
 			cout << "Save video from webcam to file: -sv" << endl;
-
+      
 			return -1;
 		}
 		else if(arg == "-p"){
 			path_arg = argv[i+1];
 			failpath = path_arg + "/failures/";
 			path = path_arg + "/pic/";
-
+      
 			flag[0] = true;
 			cout << "Path set to: " << path << endl;
 		}
@@ -187,8 +190,9 @@ int main(int argc, char const *argv[])
 
 					/* Histogram generation, for debugging */
 
+
 					if(flag[4]) cout << "Generating histogram of pixels in raw image..." << endl << endl;					
-					//if(flag[4]) histogram = hist(img, true);
+					if(flag[4]) histogram = hist(img, true);
 		
 					/* If in manual mode, show the images in windows */ 
 
@@ -238,8 +242,8 @@ int main(int argc, char const *argv[])
 							circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
 							success++;
 
-						/* If not in manual mode, save images where detectionn failed */ 
 
+						/* If not in manual mode, save images where detection failed */ 
 						}else if(!flag[4]){
 							imwrite(failpath + fname, img);
 						}
@@ -324,12 +328,13 @@ int main(int argc, char const *argv[])
 			
 			/* Thresholding*/
 
-      		Canny(img_blr,img_edge, 50, 200, 3,true);
+
+      Canny(img_blr,img_edge, 50, 200, 3,true);
     
 			namedWindow("Edges",WINDOW_AUTOSIZE);
 			moveWindow("Edges",1280-img_edge.size().width,53+img.size().height);
 			imshow("Edges",img_edge);
-			
+      
 			/* Corner Detection */
 
 			goodFeaturesToTrack(img_edge,points,16,0.2,10,noArray(),11,false,0.04);
