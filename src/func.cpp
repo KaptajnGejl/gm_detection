@@ -118,9 +118,6 @@ corner find_square(vector<corner> corners, Mat& img_cor, Mat& img, float match_l
 	// that is, if the center of the found square is black thus is in the cross.
 	// the center of the found square is returned. If no square is found, the center (0,0) is returned
 
-  center = global_center(corners);
-
-
 	double match = 0,best_match = 10;
 	vector<corner> result, temp;
 	corner c_center;
