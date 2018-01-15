@@ -21,27 +21,15 @@ struct dirent *drnt;
 int main(int argc, char const *argv[])
 {
 	DIR *dir; 
-	string path, path_arg, failpath, arg, ext;
+	string path, path_arg, failpath, arg, ext, vid_name;
 	Mat img, img_blr, img_thr, img_cor, img_edge, histogram;
 	uint16_t success = 0, total = 0;
-	unsigned char thr = 0;
 	clock_t start = time(0), end = time(0), timer = time(0), timer_old=time(0);
-
-	/*
-	Mat kernel = (Mat_<float>(5,5) << 0,0,1  ,0,0,
-		 							  0,1,2  ,1,0,
-		 							  1,2,-16,2,1,
-		 							  0,1,2  ,1,0,
-		 							  0,0,1  ,0,0);
-	*/
-
-	Mat kernel = (Mat_<float>(3,3) << -1,-1,-1,
-		 							  -1, 8,-1,
-		 							  -1,-1,-1);
-
+	vector<Point> points;
+	vector<corner> corners;
 
 	/* Flags */ 
-	bool flag[6] = {false,false,false,false,false,false}; 													//Has to be same size as number of possible arguments
+	bool flag[7] = {false,false,false,false,false,false,false}; 													//Has to be same size as number of possible arguments
 
 	/*
 	Flag table: 
@@ -51,6 +39,7 @@ int main(int argc, char const *argv[])
 	3: continue
 	4: manual
 	5: webcam
+	6: save video
 	*/
 
 
@@ -78,6 +67,7 @@ int main(int argc, char const *argv[])
 			cout << "Manual mode: -m" << endl;
 			cout << "Failure mode: -f" << endl;
 			cout << "Use webcam as source: -w" << endl;
+			cout << "Save video from webcam to file: -sv" << endl;
 
 			return -1;
 		}
@@ -85,59 +75,67 @@ int main(int argc, char const *argv[])
 			path_arg = argv[i+1];
 			failpath = path_arg + "/failures/";
 			path = path_arg + "/pic/";
-      
-			flag[0] = true;
 
+			flag[0] = true;
 			cout << "Path set to: " << path << endl;
 		}
 		else if(arg == "-e"){
-
 			ext = argv[i+1];
 			flag[1] = true;
-
 			cout << "Extension set to: " << ext << endl;
 		}
 		else if(arg == "-m"){
-
 			flag[4] = true;
-
 			cout << "Manual mode selected." << endl;
 		}
 		else if(arg == "-f"){
 			path = path_arg + "/failures/";
-
 			cout << "Path set to: " << path << endl;
 		}
 		else if(arg == "-w"){
 			flag[5] = true;
-
 			cout << "Using webcam as image source" << endl;
+		}
+		else if(arg == "-sv"){
+			flag[6] = true;
+			cout << "Please enter filename for video: " ;
+			getline(cin, vid_name);
+			if(vid_name.length() > 0){
+				cout << "Saving video to " << vid_name << ".avi" << endl;
+				vid_name += ".avi";
+			}
+			else{
+				cout << "Video name must be longer than zero characters." << endl;
+				return -1;
+			}
 		}
 	}
 
-	if((flag[0] || flag[1]) == false){															//Check for correct arguments
-
-		cout << "Both current and extension must be set. Use -help for details." << endl;
+	if(!(flag[5] || flag[6]) && !(flag[0] && flag[1])){															//Check for correct arguments
+		cout << "Both path and extension must be set. Use -help for details." << endl;
 		return -1;
-
 	}
-	else{
+	else if(flag[6] && !flag[5]){
+		cout << "Webcam must be used if video is to be saved" << endl;
+		return -1;
+	}
+	
+
+	if(flag[0] && flag[1]){
 
 		dir = opendir(path.c_str());															//try to open image directory
 
 		if(dir){
-
 			cout << endl << "Opened working directory." << endl;  
 		}
 		else{
-
-			cout << "Failed to open working directory" << endl;
+			cout << "Failed to open working directory." << endl;
 			return -1;
-
 		}
-
+	}else{
+		dir = opendir("bogus");
 	}
-
+		
 
 	cout << endl << "Press Enter to coninue..." << endl; 
 	while(cin.get()!='\n'){}
@@ -157,7 +155,6 @@ int main(int argc, char const *argv[])
 			string fname = drnt->d_name;
 
 			if(fname.find(ext,(fname.length()-ext.length())) != string::npos){
-
 				clrscr();
 				cout << "Found image: " << fname << endl;
 				cout << "No. of images found: " << total << endl;
@@ -168,8 +165,6 @@ int main(int argc, char const *argv[])
 					namedWindow(fname,WINDOW_AUTOSIZE);
 					moveWindow(fname,1280-img.size().width,20);
 					waitKey(100);
-					//string cmd = "wmctrl -a " + fname + " 2>/dev/null";
-					//if(system(cmd.c_str()));	
 				}
 
 				flag[3] = false;
@@ -181,60 +176,36 @@ int main(int argc, char const *argv[])
 					
 					/* Blurring */
 
-					if(flag[4]) cout << "Blurring Image..." << endl << endl;
-					GaussianBlur(img,img_blr,Size(5,5),0,0);
+					if(flag[4]) cout << "Blurring image..." << endl << endl;
+					GaussianBlur(img,img_blr,Size(1,1),0,0);
 
-					/* Thresholding*/
-					threshold(img_blr,img_thr,0,255,THRESH_TOZERO);
-					//adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY, 7, 2);
-					Canny(img_blr,img_edge, 50, 200, 3,true);
-					
-					
+					/* Canny edge detection */
 
-					
-					if(flag[4]) histogram = hist(img, true);
-					else if(!flag[4]) histogram = hist(img, false);
-					/*
-					if(flag[4]) cout << "Threshold set to: " << int(thr) << endl;
-					if(flag[4]) cout << "Thresholding image..." << endl << endl;
+					if(flag[4]) cout << "Finding strong edges in the image..." << endl << endl;
+					Canny(img_blr,img_edge, 125, 200, 3,true);
+				
 
-					
-					float sum_i = 0, sum_p = 0;
+					/* Histogram generation, for debugging */
 
-					for (int i = 0; i < 256; ++i)
-					{
-						sum_i += i*histogram.at<float>(i);
-						sum_p += histogram.at<float>(i);
-					}
-
-					if (sum_i/sum_p > 150 || histogram.at<float>(255) > 1000){
-
-						adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
-
-					}
-
-					else {
-
-						threshold(img_blr,img_thr,thr,255,0);
-						adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
-
-					}*/
+					if(flag[4]) cout << "Generating histogram of pixels in raw image..." << endl << endl;					
+					//if(flag[4]) histogram = hist(img, true);
+		
+					/* If in manual mode, show the images in windows */ 
 
 					if(flag[4]){
 						namedWindow("Edges",WINDOW_AUTOSIZE);
 						moveWindow("Edges",1280-img_edge.size().width,53+img.size().height);
 						imshow("Edges",img_edge);
 
-						namedWindow("Thresholded",WINDOW_AUTOSIZE);
-						moveWindow("Thresholded",1280-2*(img_thr.size().width),2*(53+img.size().height));
-						imshow("Thresholded",img_thr);
+						namedWindow("Blurred",WINDOW_AUTOSIZE);
+						moveWindow("Blurred",1280-2*(img_blr.size().width),2*(53+img.size().height));
+						imshow("Blurred",img_blr);
 					}
+
 					/* Corner Detection */
 
-					if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
-
-					vector<Point> points;
-					goodFeaturesToTrack(img_edge,points,12,0.2,10,noArray(),11,false,0.04);
+					if(flag[4]) cout << "Detecting corners in the edge image..." << endl << endl;
+					goodFeaturesToTrack(img_edge,points,16,0.2,10,noArray(),11,false,0.04);
 
 
 					/* Draw found corners */
@@ -244,36 +215,40 @@ int main(int argc, char const *argv[])
 						circle(img_cor,points[i],3,Scalar(0,140,255),-1,0);
 					}
 
-
-					/* Find center of cross, and draw it */
+					/* If some points are found, process them */
 
 					if(points.size()>0){
-						vector<corner> corners = cvtCorner(points);
 
-		 				//corner center = global_center(corners);
-		 				//circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
+						corners = cvtCorner(points); 					
+						points.clear();
+		 				
+						/* First, search the image for good squares */ 
 
-						//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
+						corner c_center = find_square(corners, img_cor, img, 0.02, 0.8);
 
-						corner c_center = find_square2(corners, img_cor,img_thr, 0.02);
+						/* If no squares are found, search for triangles instead */
 
-						if(c_center.pos.x==0 && c_center.pos.y == 0) {
-
-							c_center = find_triangle2(corners, img_cor, img_thr, 0.3);
+						if(c_center.pos.x == 0 && c_center.pos.y == 0) {
+							c_center = find_triangle(corners, img_cor, img, 0.3, 0.8);
 						}
 
-						if(c_center.pos.x!=0 && c_center.pos.y != 0){
+						/* If either a square or triangle is found, count up no. of successes, and draw the center of the corner */ 
+
+						if(c_center.pos.x != 0 && c_center.pos.y != 0){
 							circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
-							//cout << int(img.at<uchar>(c_center.pos.y,c_center.pos.x)) << endl;
 							success++;
+
+						/* If not in manual mode, save images where detectionn failed */ 
 
 						}else if(!flag[4]){
 							imwrite(failpath + fname, img);
 						}
 
+						/* Show the result, and prompt the user for input */ 
+
 						if(flag[4]){		
 							namedWindow("Corners",WINDOW_AUTOSIZE);
-							moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
+							moveWindow("Corners",1280-img_blr.size().width,2*(53+img.size().height));
 							imshow("Corners",img_cor);
 							
 							cout << "Press Enter to continue or 'q' to quit..." << endl;  
@@ -290,11 +265,11 @@ int main(int argc, char const *argv[])
 								break;
 							}
 						}
-						
+						corners.clear();
 					}
-					else{
+					else{ /* Continue to next image if no points are found */ 
 						flag[3]=true;
-					}
+					} /* If in automatic mode, always continue to next image */ 
 					if(!flag[4]) flag[3]=true;		
 				}
 				if(flag[4]) destroyAllWindows();
@@ -303,85 +278,61 @@ int main(int argc, char const *argv[])
 	}
 	else{
 		VideoCapture stream(0);
-		//VideoWriter video("test.avi",video.fourcc('M','J','P','G'),15,Size(320,240));
+		VideoWriter video = VideoWriter(vid_name,video.fourcc('M','J','P','G'),15,Size(320,240));
+		uint16_t FPS = 0;
 
-		if (!stream.isOpened() /*|| !video.isOpened()*/) { //check if video device has been initialised
+		/* Check if camera device has been initialised */
+		if (!stream.isOpened()) { 
 			cout << "Cannot open camera" << endl;
 			return -1;
 		}
 
+		/* If save video is enabled, check if video stream can be opened */
+		if(flag[6]){
+			if (!video.isOpened()) {
+			cout << "Cannot open video file, maybe you don't have the MJPG codec?" << endl;
+			return -1;
+			}
+		}
+	
 		stream.set(CV_CAP_PROP_FRAME_WIDTH,320);
 		stream.set(CV_CAP_PROP_FRAME_HEIGHT,240);
 	
 		while(true){
 
+			/* Calculate and display frames per second*/
 			timer = time(0);
-
 			if(timer!=timer_old){
 				timer_old = time(0);
 				clrscr();
-				cout << "FPS: " << total << endl;
-				total = 0;
+				cout << "FPS: " << FPS << endl;
+				FPS = 0;
 			}
-			
+			FPS++;
+
 			stream.read(img);
-			//img = imread(path+fname,CV_LOAD_IMAGE_GRAYSCALE);
 			cvtColor(img,img,COLOR_BGR2GRAY,0);	
 
 			namedWindow("Stream",WINDOW_AUTOSIZE);
 			moveWindow("Stream",1280-img.size().width,20);
 			waitKey(1);
-
-			total ++;
-
 			imshow("Stream",img);	 
 			
 			/* Blurring */
 
-			//if(flag[4]) cout << "Blurring Image..." << endl << endl;
-			GaussianBlur(img,img_blr,Size(11,11),0,0);
+			GaussianBlur(img,img_blr,Size(3,3),0,0);
 			
-			//filter2D(img,img_blr,-1,kernel,Point(-1,-1),0,BORDER_DEFAULT);
-			//Laplacian(img_blr, img_thr, CV_16S, 5, 1,0, BORDER_DEFAULT );
-			//convertScaleAbs( img_thr, img_thr );
-
 			/* Thresholding*/
 
-			//if(flag[4]) thr = optimal_threshold(hist(img_blr,true));
-			//thr = optimal_threshold(hist(img_blr,true));
-			//threshold(img_blr,img_thr,thr,255,THRESH_BINARY);
-			//adaptiveThreshold(img_thr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
-      		Canny(img_blr,img_thr, 100, 220, 3,true);
-
-      		/*
-      		Mat histogram = hist(img_blr, false);
-
-			float sum_i = 0, sum_p = 0;
-
-			if (sum_i/sum_p > 150 || histogram.at<float>(255) > 1000){
-
-				threshold(img_blr,img_thr,thr,255,THRESH_BINARY);
-				adaptiveThreshold(img_blr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
-
-			}
-
-			else {
-
-				threshold(img_blr,img_thr,thr,255,THRESH_BINARY);
-				adaptiveThreshold(img_thr, img_thr, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, 11, 10);
-
-			}*/
-			
-			namedWindow("Thresholded",WINDOW_AUTOSIZE);
-			moveWindow("Thresholded",1280-img_thr.size().width,53+img.size().height);
-			imshow("Thresholded",img_thr);
+      		Canny(img_blr,img_edge, 50, 200, 3,true);
+    
+			namedWindow("Edges",WINDOW_AUTOSIZE);
+			moveWindow("Edges",1280-img_edge.size().width,53+img.size().height);
+			imshow("Edges",img_edge);
 			
 			/* Corner Detection */
 
-			//if(flag[4]) cout << "Detecting corners on thresholded image..." << endl << endl;
-
-			vector<Point> points;
-			goodFeaturesToTrack(img_thr,points,12,0.2,20,noArray(),11,false,0.04);
+			goodFeaturesToTrack(img_edge,points,16,0.2,10,noArray(),11,false,0.04);
 
 
 			/* Draw found corners */
@@ -391,66 +342,41 @@ int main(int argc, char const *argv[])
 				circle(img_cor,points[i],3,Scalar(0,140,255),-1,0);
 			}
 
-
 			/* Find center of cross, and draw it */
 
 			if(points.size()>0){
-				vector<corner> corners = cvtCorner(points);
-
- 				//corner center = global_center(corners);
- 				//circle(img_cor,Point(center.pos.x,center.pos.y),3,Scalar(0,0,255),-1,0);
+				corners = cvtCorner(points);
+				points.clear();
  				
- 				corner c_center = find_square2(corners, img_cor,img_thr, 0.02);
+ 				corner c_center = find_square(corners, img_cor, img, 0.02, 0.8);
 
 				if(c_center.pos.x==0 && c_center.pos.y == 0) {
 
-					c_center = find_triangle2(corners, img_cor, img_thr, 0.05);
+					c_center = find_triangle(corners, img_cor, img, 0.3, 0.8);
 				}
-
-				//corner c_center = cross_center(img_thr, img_cor, corners, flag[4]);
 
 				if(c_center.pos.x!=0 && c_center.pos.y != 0){
 					circle(img_cor,Point(c_center.pos.x,c_center.pos.y),3,Scalar(255,0,0),-1,0);
 					success++;
 				}
-				//}else if(!flag[4]){
-				//	imwrite(failpath + fname, img);
-				//}
 
 				namedWindow("Corners",WINDOW_AUTOSIZE);
-				moveWindow("Corners",1280-img_thr.size().width,2*(53+img.size().height));
+				moveWindow("Corners",1280-img_cor.size().width,2*(53+img.size().height));
 				imshow("Corners",img_cor);
-				//video.write(img_cor);
-				
-				/*
-				if(flag[4]){		
-					cout << "Press Enter to continue or 'q' to quit..." << endl;  
-					char key = waitKey(0);
 
-					switch(key){
-						case 'q':
-							flag[2] = true;
-							flag[3] = true;
-						break;
-
-						case 13: //Enter key
-							flag[3] = true;
-						break;
-					}
-				}
-				*/
-				
+				corners.clear();
 			}
+			if(flag[6]) video.write(img_cor);
+
 			char key = waitKey(10);
 			if(key == 'q') break;	
 			
-			//destroyAllWindows();
 		}
 	}
 
 	if(flag[4]) destroyAllWindows();
 	if(!flag[4]) end = time(0);
-	if(!flag[5])cout << "Success Rate: " << (float)(success*100.0f/(total-1)) << '%' << endl << success << total;
+	if(!flag[5])cout << "Success Rate: " << (float)(success*100.0f/(total-1)) << '%' << endl;
 	if(!flag[4]) cout << "Time Elapsed: " << difftime(end, start) << " s" << endl;
 	cout << "Succesfully exited." << endl;
 	return 0;
