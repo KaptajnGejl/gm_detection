@@ -10,6 +10,8 @@
 #include <math.h>
 #include <algorithm>
 #include <ctime>
+#include <fstream>
+#include <cctype>
 
 #include "func.hpp"
 
@@ -18,18 +20,41 @@ using namespace cv;
 
 struct dirent *drnt;
 
+int ksz = 1, qlv = 20, mxc = 16, bsz = 11;
+
+static void ksz_cb(int , void*){
+	if(ksz==0) ksz = 1;
+	else if(ksz%2 == 0) ksz--;
+}
+
+static void qlv_cb(int , void*){
+	if(qlv==0) qlv = 1;	
+}
+
+static void mxc_cb(int , void*){
+	if(mxc==0) mxc = 1;
+}
+
+static void bsz_cb(int , void*){
+	if(bsz==0) ksz = 1;
+	else if(bsz%2 == 0) bsz--;
+}
+
+
+
 int main(int argc, char const *argv[])
 {
 	DIR *dir; 
 	string path, path_arg, failpath, arg, ext, vid_name;
 	Mat img, img_blr, img_thr, img_cor, img_edge, histogram;
-	uint16_t success = 0, total = 0;
+	int success = 0, total = 0, ct1 = 125, ct2 = 200, mds = 10, sql = 20, trl = 300, drk = 80, t_start = 0, t_end = 0;
+	float t = 0.0;
 	clock_t start = time(0), end = time(0), timer = time(0), timer_old=time(0);
 	vector<Point> points;
 	vector<corner> corners;
 
 	/* Flags */ 
-	bool flag[7] = {false,false,false,false,false,false,false}; 													//Has to be same size as number of possible arguments
+	bool flag[8] = {false,false,false,false,false,false,false,false}; 													//Has to be same size as number of possible arguments
 
 	/*
 	Flag table: 
@@ -40,6 +65,7 @@ int main(int argc, char const *argv[])
 	4: manual
 	5: webcam
 	6: save video
+	7: test
 	*/
 
 
@@ -68,6 +94,7 @@ int main(int argc, char const *argv[])
 			cout << "Failure mode: -f" << endl;
 			cout << "Use webcam as source: -w" << endl;
 			cout << "Save video from webcam to file: -sv" << endl;
+			cout << "Test mode: -t" << endl;
 
 			return -1;
 		}
@@ -109,6 +136,10 @@ int main(int argc, char const *argv[])
 				return -1;
 			}
 		}
+		else if(arg == "-t"){
+			flag[7] = true;
+			cout << "Test mode selected" << endl;
+		}
 	}
 
 	if(!(flag[5] || flag[6]) && !(flag[0] && flag[1])){															//Check for correct arguments
@@ -117,6 +148,10 @@ int main(int argc, char const *argv[])
 	}
 	else if(flag[6] && !flag[5]){
 		cout << "Webcam must be used if video is to be saved" << endl;
+		return -1;
+	}
+	else if(flag[7] && !flag[5]){
+		cout << "Test mode must use webcam. Use -help for details." << endl;
 		return -1;
 	}
 	
@@ -132,10 +167,110 @@ int main(int argc, char const *argv[])
 			cout << "Failed to open working directory." << endl;
 			return -1;
 		}
-	}else{
+	}
+	else{
 		dir = opendir("bogus");
 	}
-		
+
+	/* Read parameters */
+
+	cout << endl << "Reading parameters from params.txt..." << endl << endl;
+
+	string search, line;
+	fstream params;
+	uint16_t l = 0;
+
+	params.open("params.txt",ios::in);
+	if(!params){
+		cout << "Unable to open parameter file." << endl;
+		return -1;
+	} 
+
+	while(params.good()){
+		getline(params,line);	
+
+		if(line.substr(0,3) == "ksz"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			ksz = stoi(line.substr(5,l-5));
+			cout << "Setting kernel size to " << ksz <<  endl;
+		}
+		if(line.substr(0,3) == "ct1"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			ct1 = stoi(line.substr(5,l-5));
+			cout << "Setting lower canny threshold to " << ct1 <<  endl;
+		}
+		if(line.substr(0,3) == "ct2"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			ct2 = stoi(line.substr(5,l-5));
+			cout << "Setting upper canny threshold to " << ct2 <<  endl;
+		}
+		if(line.substr(0,3) == "mxc"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			mxc = stoi(line.substr(5,l-5));
+			cout << "Setting maximum number of corners to " << mxc <<  endl;
+		}
+		if(line.substr(0,3) == "qlv"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			qlv = stoi(line.substr(5,l-5));
+			cout << "Setting quality level to " << float(qlv)/100 <<  endl;
+		}
+		if(line.substr(0,3) == "mds"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			mds = stoi(line.substr(5,l-5));
+			cout << "Setting minimum distance between corners to " << mds <<  endl;
+		}
+		if(line.substr(0,3) == "bsz"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			bsz = stoi(line.substr(5,l-5));
+			cout << "Setting corner blocksize to " << bsz <<  endl;
+		}
+		if(line.substr(0,3) == "sql"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			sql = stoi(line.substr(5,l-5));
+			cout << "Setting square match limit to " << float(sql)/1000 <<  endl;
+		}
+		if(line.substr(0,3) == "trl"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			trl = stoi(line.substr(5,l-5));
+			cout << "Setting triangle match limit to " << float(trl)/1000 <<  endl;
+		}
+		if(line.substr(0,3) == "drk"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			drk = stoi(line.substr(5,l-5));
+			cout << "Setting triangle match limit to " << float(drk)/100 <<  endl;
+		}
+	}
+	params.close(); 
 
 	cout << endl << "Press Enter to coninue..." << endl; 
 	while(cin.get()!='\n'){}
@@ -143,10 +278,8 @@ int main(int argc, char const *argv[])
 	if(!flag[4]) start = time(0);
 
 
-	/* End of argument handling */ 
-
-
 	/* Main loop */ 
+
 	if(!flag[5]){
 		cout <<  "Searching path for images with extension " << ext << "..." << endl << endl;
 
@@ -177,18 +310,18 @@ int main(int argc, char const *argv[])
 					/* Blurring */
 
 					if(flag[4]) cout << "Blurring image..." << endl << endl;
-					GaussianBlur(img,img_blr,Size(1,1),0,0);
+					GaussianBlur(img,img_blr,Size(ksz,ksz),0,0);
 
 					/* Canny edge detection */
 
 					if(flag[4]) cout << "Finding strong edges in the image..." << endl << endl;
-					Canny(img_blr,img_edge, 125, 200, 3,true);
+					Canny(img_blr,img_edge, ct1, ct2, 3,true);
 				
 
 					/* Histogram generation, for debugging */
 
 					if(flag[4]) cout << "Generating histogram of pixels in raw image..." << endl << endl;					
-					//if(flag[4]) histogram = hist(img, true);
+					if(flag[4]) histogram = hist(img, true);
 		
 					/* If in manual mode, show the images in windows */ 
 
@@ -205,7 +338,7 @@ int main(int argc, char const *argv[])
 					/* Corner Detection */
 
 					if(flag[4]) cout << "Detecting corners in the edge image..." << endl << endl;
-					goodFeaturesToTrack(img_edge,points,16,0.2,10,noArray(),11,false,0.04);
+					goodFeaturesToTrack(img_edge,points,mxc,float(qlv)/100,mds,noArray(),bsz,false,0.04);
 
 
 					/* Draw found corners */
@@ -224,12 +357,12 @@ int main(int argc, char const *argv[])
 		 				
 						/* First, search the image for good squares */ 
 
-						corner c_center = find_square(corners, img_cor, img, 0.02, 0.8);
+						corner c_center = find_square(corners, img_cor, img, float(sql)/1000, float(drk)/100);
 
 						/* If no squares are found, search for triangles instead */
 
 						if(c_center.pos.x == 0 && c_center.pos.y == 0) {
-							c_center = find_triangle(corners, img_cor, img, 0.3, 0.8);
+							c_center = find_triangle(corners, img_cor, img, float(trl)/1000, float(drk)/100);
 						}
 
 						/* If either a square or triangle is found, count up no. of successes, and draw the center of the corner */ 
@@ -277,7 +410,7 @@ int main(int argc, char const *argv[])
 		}
 	}
 	else{
-		VideoCapture stream(0);
+		VideoCapture stream(1);
 		VideoWriter video = VideoWriter(vid_name,video.fourcc('M','J','P','G'),15,Size(320,240));
 		uint16_t FPS = 0;
 
@@ -300,17 +433,37 @@ int main(int argc, char const *argv[])
 	
 		while(true){
 
+			if(flag[7]){
+				namedWindow("Params",WINDOW_AUTOSIZE);
+				moveWindow("Params",1280-2*img.size().width,20);
+				createTrackbar("Kernel size","Params",&ksz,31,ksz_cb);
+				createTrackbar("Lower canny threshold","Params",&ct1,255,NULL);
+				createTrackbar("Upper canny threshold","Params",&ct2,255,NULL);
+				createTrackbar("Max corners","Params",&mxc,20,mxc_cb);
+				createTrackbar("Quality level","Params",&qlv,100,qlv_cb);
+				createTrackbar("Min. distance","Params",&mds,50,NULL);
+				createTrackbar("Block size","Params",&bsz,31,bsz_cb);
+				createTrackbar("Square limit","Params",&sql,200,NULL);
+				createTrackbar("Triangle limit","Params",&trl,500,NULL);
+				createTrackbar("Intensity limit","Params",&drk,100,NULL);
+			}
 			/* Calculate and display frames per second*/
 			timer = time(0);
 			if(timer!=timer_old){
 				timer_old = time(0);
 				clrscr();
 				cout << "FPS: " << FPS << endl;
+				cout << "Average execution time: " << t/FPS << endl;
+				cout << "Max. possible FPS: " << FPS/t << endl;
+				t = 0;
 				FPS = 0;
 			}
 			FPS++;
 
 			stream.read(img);
+
+			t_start = getTickCount();
+
 			cvtColor(img,img,COLOR_BGR2GRAY,0);	
 
 			namedWindow("Stream",WINDOW_AUTOSIZE);
@@ -320,11 +473,11 @@ int main(int argc, char const *argv[])
 			
 			/* Blurring */
 
-			GaussianBlur(img,img_blr,Size(3,3),0,0);
+			GaussianBlur(img,img_blr,Size(ksz,ksz),0,0);
 			
 			/* Thresholding*/
 
-      		Canny(img_blr,img_edge, 50, 200, 3,true);
+      		Canny(img_blr,img_edge, ct1, ct2, 3,true);
     
 			namedWindow("Edges",WINDOW_AUTOSIZE);
 			moveWindow("Edges",1280-img_edge.size().width,53+img.size().height);
@@ -332,7 +485,7 @@ int main(int argc, char const *argv[])
 			
 			/* Corner Detection */
 
-			goodFeaturesToTrack(img_edge,points,16,0.2,10,noArray(),11,false,0.04);
+			goodFeaturesToTrack(img_edge,points,mxc,float(qlv)/100,mds,noArray(),bsz,false,0.04);
 
 
 			/* Draw found corners */
@@ -348,11 +501,11 @@ int main(int argc, char const *argv[])
 				corners = cvtCorner(points);
 				points.clear();
  				
- 				corner c_center = find_square(corners, img_cor, img, 0.02, 0.8);
+ 				corner c_center = find_square(corners, img_cor, img, float(sql)/1000, float(drk)/100);
 
 				if(c_center.pos.x==0 && c_center.pos.y == 0) {
 
-					c_center = find_triangle(corners, img_cor, img, 0.3, 0.8);
+					c_center = find_triangle(corners, img_cor, img, float(trl)/1000, float(drk)/100);
 				}
 
 				if(c_center.pos.x!=0 && c_center.pos.y != 0){
@@ -369,9 +522,42 @@ int main(int argc, char const *argv[])
 			if(flag[6]) video.write(img_cor);
 
 			char key = waitKey(10);
-			if(key == 'q') break;	
+			if(key == 'q') break;
+
+			t_end = getTickCount();
+			t += float(t_end - t_start)/getTickFrequency();	
 			
 		}
+	}
+
+	if(flag[7]){
+		string outline;
+		params.open("params.txt",ios::out|ios::trunc);
+		if(!params){
+		cout << "Unable to open parameter file." << endl;
+		} 
+		outline = "ksz:=" + to_string(ksz);
+		params << outline  << setw(80-outline.length()) << "#size of kernel for gaussian blurring\n";
+		outline = "ct1:=" + to_string(ct1);
+		params << outline  << setw(80-outline.length()) <<  "#lower threshold for canny edge detector\n";
+		outline = "ct2:=" + to_string(ct2);
+		params << outline  << setw(80-outline.length()) <<  "#upper threshold for canny edge detector\n";
+		outline = "mxc:=" + to_string(mxc);
+		params << outline  << setw(80-outline.length()) <<  "#maximum number of corners return from goodFeaturesToTrack\n";
+		outline = "qlv:=" + to_string(qlv);
+		params << outline  << setw(80-outline.length()) <<  "#quality level of goodFeaturesToTrack (qlv/100)\n";
+		outline = "mds:=" + to_string(mds);
+		params << outline  << setw(80-outline.length()) <<  "#minimum distance of goodFeaturesToTrack\n";		
+		outline = "bsz:=" + to_string(bsz);
+		params << outline  << setw(80-outline.length()) <<  "#blocksize of goodFeaturesToTrack\n";	
+		outline = "sql:=" + to_string(sql);
+		params << outline  << setw(80-outline.length()) <<  "#square search match limit (sql/1000)\n";
+		outline = "trl:=" + to_string(trl);
+		params << outline  << setw(80-outline.length()) <<  "#triangle search match limit (trl/1000)\n";
+		outline = "drk:=" + to_string(drk);
+		params << outline  << setw(80-outline.length()) <<  "#limit for intensity of square center pixel (drk/100)\n";
+
+		params.close();
 	}
 
 	if(flag[4]) destroyAllWindows();

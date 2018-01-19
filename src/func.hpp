@@ -23,11 +23,12 @@ vector<corner> cvtCorner(vector<Point> points);
 vector<Point> cvtPoint(vector<corner>corners);
 Mat hist(Mat img, bool show_image);
 corner global_center(vector<corner> corners);
-corner find_square(vector<corner> corners, Mat& img_cor ,Mat& img_thr, float match_limit, float center_limit); 
-corner find_triangle(vector<corner> corners, Mat& img_cor, Mat& img_thr, float match_limit, float center_limit); 
+corner find_square(vector<corner> corners, Mat& img_cor ,Mat& img, float match_limit, float center_limit); 
+corner find_triangle(vector<corner> corners, Mat& img_cor, Mat& img, float match_limit, float center_limit); 
 double squareMatch(vector<Point> points);
 double triangleMatch(vector<Point> points);
 corner triangle_center(vector<corner> corners);
 bool center_check(corner center, Mat histogram, Mat& img, float limit_factor);
+static void ksz_cb(int , void*);
 
 #endif
