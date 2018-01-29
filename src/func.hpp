@@ -29,6 +29,6 @@ double squareMatch(vector<Point> points);
 double triangleMatch(vector<Point> points);
 corner triangle_center(vector<corner> corners);
 bool center_check(corner center, Mat histogram, Mat& img, float limit_factor);
-static void ksz_cb(int , void*);
+bool point_check(corner center, vector<corner> corners, Mat& img, float limit_factor);
 
 #endif

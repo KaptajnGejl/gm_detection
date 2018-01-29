@@ -145,7 +145,7 @@ corner find_square(vector<corner> corners, Mat& img_cor, Mat& img, float match_l
 
 							corner temp_center = global_center(temp);
 
-							if (center_check(temp_center,hist(img,false),img,center_limit)) { //&& similar_point_check(img_thr,temp)) {
+							if (point_check(temp_center, temp, img, center_limit)) {
 								best_match = match;
 								result = temp;
 							}
@@ -208,7 +208,7 @@ corner find_triangle(vector<corner> corners, Mat& img_cor, Mat& img, float match
 
 					if ((match < best_match) && (match < match_limit) && (match != 0)) {
 						corner temp_center = triangle_center(temp);
-						if (center_check(temp_center,hist(img,false),img,center_limit)) { 
+						if (point_check(temp_center, temp, img, center_limit)) { 
 							best_match = match;
 							result = temp;
 						}
@@ -320,6 +320,8 @@ bool center_check(corner center, Mat histogram, Mat& img, float limit_factor) {
 
 	int sum_i = 0,sum_p = 0;
 
+
+
 	for (int i = 0; i < 256; ++i)
 		{
 			sum_i += i*histogram.at<float>(i);
@@ -332,6 +334,30 @@ bool center_check(corner center, Mat histogram, Mat& img, float limit_factor) {
 
 		else return false;
 
+}
+
+bool point_check(corner center, vector<corner> corners, Mat& img, float limit_factor){
+	uint16_t max_int = 0, avg_int = 0;
+
+
+	for(uint16_t i = 0; i< corners.size(); i++){
+		if(corners[i].pos.x<10 || corners[i].pos.x > 310 || corners[i].pos.y<10 || corners[i].pos.y > 230) return false;
+		for(uint16_t j = corners[i].pos.x-10; j < corners[i].pos.x+10; j++){
+			for(uint16_t k = corners[i].pos.y-10; k < corners[i].pos.y+10; k++){
+				if(img.at<uchar>(k,j)>max_int) max_int = img.at<uchar>(k,j);
+			}
+		}
+		avg_int += max_int;
+		max_int = 0;
+	}
+	avg_int /= corners.size();
+
+	//cout << "Avg int: " << avg_int << endl;
+
+	//cout << "Ratio: " << float(avg_int)/float(img.at<uchar>(center.pos.y,center.pos.x)) << endl;
+
+	if(float(avg_int)/float(img.at<uchar>(center.pos.y,center.pos.x)) > limit_factor) return true;
+	else return false;
 }
 
 

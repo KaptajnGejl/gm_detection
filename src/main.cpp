@@ -41,13 +41,12 @@ static void bsz_cb(int , void*){
 }
 
 
-
 int main(int argc, char const *argv[])
 {
 	DIR *dir; 
 	string path, path_arg, failpath, arg, ext, vid_name;
 	Mat img, img_blr, img_thr, img_cor, img_edge, histogram;
-	int success = 0, total = 0, ct1 = 125, ct2 = 200, mds = 10, sql = 20, trl = 300, drk = 80, t_start = 0, t_end = 0;
+	int success = 0, total = 0, ct1 = 125, ct2 = 200, mds = 10, sql = 20, trl = 300, ctc = 20, t_start = 0, t_end = 0, dev_id = 0;
 	float t = 0.0;
 	clock_t start = time(0), end = time(0), timer = time(0), timer_old=time(0);
 	vector<Point> points;
@@ -84,17 +83,25 @@ int main(int argc, char const *argv[])
 
 		if(arg == "-help"){
 
-			cout << "#####################################" << endl;
-			cout << "############# Help Menu #############" << endl;
-			cout << "#####################################" << endl << endl;
+			cout << "#################################################" << endl;
+			cout << "################### Help Menu ###################" << endl;
+			cout << "#################################################" << endl << endl;
 
-			cout << "Current path: -p $PWD" << endl;
-			cout << "Image file extension: -e .extension" << endl;
-			cout << "Manual mode: -m" << endl;
-			cout << "Failure mode: -f" << endl;
-			cout << "Use webcam as source: -w" << endl;
-			cout << "Save video from webcam to file: -sv" << endl;
-			cout << "Test mode: -t" << endl;
+			string help;
+			help = "Current path:";
+			cout << help << setw(49-help.length()) << "-p $PWD" << endl;
+			help = "Image file extension:";
+			cout << help << setw(49-help.length()) << "-e .extension" << endl;
+			help = "Manual mode:";
+			cout << help << setw(49-help.length()) << "-m" << endl;
+			help = "Failure mode:";  
+			cout << help << setw(49-help.length()) << "-f" << endl;
+			help = "Use camera with device id # as source:";
+			cout << help << setw(49-help.length()) << "-w #" << endl;
+			help = "Save video to file:";
+			cout << help << setw(49-help.length()) << "-sv" << endl;
+			help = "Test mode:";
+			cout << help << setw(49-help.length()) << "-t" << endl;
 
 			return -1;
 		}
@@ -121,7 +128,8 @@ int main(int argc, char const *argv[])
 		}
 		else if(arg == "-w"){
 			flag[5] = true;
-			cout << "Using webcam as image source" << endl;
+			dev_id = stoi(argv[i+1]);
+			cout << "Using camera " << dev_id << " as image source" << endl;
 		}
 		else if(arg == "-sv"){
 			flag[6] = true;
@@ -261,14 +269,22 @@ int main(int argc, char const *argv[])
 			trl = stoi(line.substr(5,l-5));
 			cout << "Setting triangle match limit to " << float(trl)/1000 <<  endl;
 		}
-		if(line.substr(0,3) == "drk"){
+		if(line.substr(0,3) == "ctc"){
 			for(l = 0; l < line.length(); l++){
 				if(isspace(line.at(l))) 
 					break;
 			}
-			drk = stoi(line.substr(5,l-5));
-			cout << "Setting triangle match limit to " << float(drk)/100 <<  endl;
+			ctc = stoi(line.substr(5,l-5));
+			cout << "Setting CtC ratio to " << float(ctc)/10 <<  endl;
 		}
+		/*if(line.substr(0,3) == "exp"){
+			for(l = 0; l < line.length(); l++){
+				if(isspace(line.at(l))) 
+					break;
+			}
+			exp = stoi(line.substr(5,l-5));
+			cout << "Setting camera exposure time to: " << exp <<  endl;
+		}*/
 	}
 	params.close(); 
 
@@ -357,12 +373,12 @@ int main(int argc, char const *argv[])
 		 				
 						/* First, search the image for good squares */ 
 
-						corner c_center = find_square(corners, img_cor, img, float(sql)/1000, float(drk)/100);
+						corner c_center = find_square(corners, img_cor, img, float(sql)/1000, float(ctc)/100);
 
 						/* If no squares are found, search for triangles instead */
 
 						if(c_center.pos.x == 0 && c_center.pos.y == 0) {
-							c_center = find_triangle(corners, img_cor, img, float(trl)/1000, float(drk)/100);
+							c_center = find_triangle(corners, img_cor, img, float(trl)/1000, float(ctc)/100);
 						}
 
 						/* If either a square or triangle is found, count up no. of successes, and draw the center of the corner */ 
@@ -410,9 +426,12 @@ int main(int argc, char const *argv[])
 		}
 	}
 	else{
-		VideoCapture stream(1);
+		VideoCapture stream(dev_id);
 		VideoWriter video = VideoWriter(vid_name,video.fourcc('M','J','P','G'),15,Size(320,240));
 		uint16_t FPS = 0;
+
+		stream.set(CV_CAP_PROP_FRAME_WIDTH,320);
+		stream.set(CV_CAP_PROP_FRAME_HEIGHT,240);
 
 		/* Check if camera device has been initialised */
 		if (!stream.isOpened()) { 
@@ -428,9 +447,6 @@ int main(int argc, char const *argv[])
 			}
 		}
 	
-		stream.set(CV_CAP_PROP_FRAME_WIDTH,320);
-		stream.set(CV_CAP_PROP_FRAME_HEIGHT,240);
-	
 		while(true){
 
 			if(flag[7]){
@@ -445,8 +461,10 @@ int main(int argc, char const *argv[])
 				createTrackbar("Block size","Params",&bsz,31,bsz_cb);
 				createTrackbar("Square limit","Params",&sql,200,NULL);
 				createTrackbar("Triangle limit","Params",&trl,500,NULL);
-				createTrackbar("Intensity limit","Params",&drk,100,NULL);
+				createTrackbar("CtC ratio","Params",&ctc,100,NULL);
+
 			}
+
 			/* Calculate and display frames per second*/
 			timer = time(0);
 			if(timer!=timer_old){
@@ -501,11 +519,11 @@ int main(int argc, char const *argv[])
 				corners = cvtCorner(points);
 				points.clear();
  				
- 				corner c_center = find_square(corners, img_cor, img, float(sql)/1000, float(drk)/100);
+ 				corner c_center = find_square(corners, img_cor, img, float(sql)/1000, float(ctc)/10);
 
 				if(c_center.pos.x==0 && c_center.pos.y == 0) {
 
-					c_center = find_triangle(corners, img_cor, img, float(trl)/1000, float(drk)/100);
+					c_center = find_triangle(corners, img_cor, img, float(trl)/1000, float(ctc)/10);
 				}
 
 				if(c_center.pos.x!=0 && c_center.pos.y != 0){
@@ -554,8 +572,10 @@ int main(int argc, char const *argv[])
 		params << outline  << setw(80-outline.length()) <<  "#square search match limit (sql/1000)\n";
 		outline = "trl:=" + to_string(trl);
 		params << outline  << setw(80-outline.length()) <<  "#triangle search match limit (trl/1000)\n";
-		outline = "drk:=" + to_string(drk);
-		params << outline  << setw(80-outline.length()) <<  "#limit for intensity of square center pixel (drk/100)\n";
+		outline = "ctc:=" + to_string(ctc);
+		params << outline  << setw(80-outline.length()) <<  "#Corner to center intensity ratio\n";
+		//outline = "exp:=" + to_string(exp);
+		//params << outline  << setw(80-outline.length()) <<  "#Exposure time of camera in ms\n";
 
 		params.close();
 	}
